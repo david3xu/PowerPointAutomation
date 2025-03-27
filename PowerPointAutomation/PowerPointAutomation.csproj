@@ -65,6 +65,8 @@
 		<Compile Include="Slides\TitleSlide.cs" />
 		<Compile Include="Utilities\AnimationHelper.cs" />
 		<Compile Include="Utilities\ComReleaser.cs" />
+		<Compile Include="Utilities\OfficeCompatibility.cs" />
+		<Compile Include="Utilities\OfficeCompatibilityTest.cs" />
 		<Compile Include="Utilities\PresentationStyles.cs" />
 	</ItemGroup>
 	<ItemGroup>

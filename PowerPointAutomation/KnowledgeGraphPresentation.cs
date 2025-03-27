@@ -454,8 +454,10 @@ namespace PowerPointAutomation
             if (smartArtLayout != null)
             {
                 // Add SmartArt diagram using compatibility-safe approach
+                // Use dynamic to avoid type conversion errors
+                dynamic dynamicLayout = smartArtLayout;
                 var chart = slide.Shapes.AddSmartArt(
-                    smartArtLayout, 
+                    dynamicLayout, 
                     smartArtLeft, smartArtTop, smartArtWidth, smartArtHeight);
 
                 // Get the SmartArt nodes and customize them
@@ -474,7 +476,7 @@ namespace PowerPointAutomation
                         slide.TimeLine.MainSequence.AddEffect(
                             chart,
                             MsoAnimEffect.msoAnimEffectFade,
-                            MsoAnimateByLevel.msoAnimateLevelAllAtOnce,
+                            MsoAnimateByLevel.msoAnimateLevelNone,
                             MsoAnimTriggerType.msoAnimTriggerWithPrevious);
                     }
                     catch (Exception ex)

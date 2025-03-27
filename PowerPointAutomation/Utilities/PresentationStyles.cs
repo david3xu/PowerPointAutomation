@@ -1,10 +1,12 @@
 using System;
 using System.Drawing;
+using System.Collections.Generic;
 using Microsoft.Office.Core;
 using PowerPointShape = Microsoft.Office.Interop.PowerPoint.Shape;
 using PowerPointShapeRange = Microsoft.Office.Interop.PowerPoint.ShapeRange;
 using Microsoft.Office.Interop.PowerPoint;
 using System.Runtime.InteropServices;
+using PowerPointAutomation.Utilities;
 
 namespace PowerPointAutomation.Utilities
 {
@@ -128,17 +130,17 @@ namespace PowerPointAutomation.Utilities
             // Set background color
             master.Background.Fill.ForeColor.RGB = ColorTranslator.ToOle(Color.White);
 
-            // Set theme colors using method calls instead of indexer
-            master.Theme.ThemeColorScheme.Colors[1].RGB = ColorTranslator.ToOle(BlueTheme.Primary);     // Text/Background dark
-            master.Theme.ThemeColorScheme.Colors[2].RGB = ColorTranslator.ToOle(Color.White);     // Text/Background light
-            master.Theme.ThemeColorScheme.Colors[5].RGB = ColorTranslator.ToOle(BlueTheme.Secondary); // Accent 1
-            master.Theme.ThemeColorScheme.Colors[6].RGB = ColorTranslator.ToOle(BlueTheme.Accent);   // Accent 2
-            master.Theme.ThemeColorScheme.Colors[7].RGB = ColorTranslator.ToOle(BlueTheme.Success);  // Accent 3
-            master.Theme.ThemeColorScheme.Colors[8].RGB = ColorTranslator.ToOle(Color.FromArgb(0, 176, 240)); // Accent 4
+            // Set theme colors using compatibility helper
+            OfficeCompatibility.SetThemeColor(master.Theme.ThemeColorScheme, 1, ColorTranslator.ToOle(BlueTheme.Primary));     // Text/Background dark
+            OfficeCompatibility.SetThemeColor(master.Theme.ThemeColorScheme, 2, ColorTranslator.ToOle(Color.White));           // Text/Background light
+            OfficeCompatibility.SetThemeColor(master.Theme.ThemeColorScheme, 5, ColorTranslator.ToOle(BlueTheme.Secondary));   // Accent 1
+            OfficeCompatibility.SetThemeColor(master.Theme.ThemeColorScheme, 6, ColorTranslator.ToOle(BlueTheme.Accent));      // Accent 2
+            OfficeCompatibility.SetThemeColor(master.Theme.ThemeColorScheme, 7, ColorTranslator.ToOle(BlueTheme.Success));     // Accent 3
+            OfficeCompatibility.SetThemeColor(master.Theme.ThemeColorScheme, 8, ColorTranslator.ToOle(Color.FromArgb(0, 176, 240))); // Accent 4
 
-            // Set default font for the presentation using Name property
-            master.Theme.ThemeFontScheme.MajorFont.Latin = Fonts.Heading;
-            master.Theme.ThemeFontScheme.MinorFont.Latin = Fonts.Body;
+            // Set default font for the presentation using compatibility helper
+            OfficeCompatibility.SetThemeFont(master.Theme.ThemeFontScheme.MajorFont, Fonts.Heading);
+            OfficeCompatibility.SetThemeFont(master.Theme.ThemeFontScheme.MinorFont, Fonts.Body);
         }
 
         /// <summary>
@@ -153,17 +155,17 @@ namespace PowerPointAutomation.Utilities
             // Set background color
             master.Background.Fill.ForeColor.RGB = ColorTranslator.ToOle(DarkTheme.Primary);
 
-            // Set theme colors using method calls instead of indexer
-            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorText).RGB = ColorTranslator.ToOle(DarkTheme.TextBody);    // Text/Background dark
-            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorBackground).RGB = ColorTranslator.ToOle(DarkTheme.Primary); // Text/Background light
-            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorAccent1).RGB = ColorTranslator.ToOle(DarkTheme.Accent);   // Accent 1
-            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorAccent2).RGB = ColorTranslator.ToOle(Color.FromArgb(255, 143, 0)); // Accent 2 - Orange
-            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorAccent3).RGB = ColorTranslator.ToOle(DarkTheme.Success);  // Accent 3
-            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorAccent4).RGB = ColorTranslator.ToOle(Color.FromArgb(232, 17, 35)); // Accent 4 - Red
+            // Set theme colors using compatibility helper
+            OfficeCompatibility.SetThemeColor(master.Theme.ThemeColorScheme, 1, ColorTranslator.ToOle(DarkTheme.TextBody));      // Text/Background dark
+            OfficeCompatibility.SetThemeColor(master.Theme.ThemeColorScheme, 2, ColorTranslator.ToOle(DarkTheme.Primary));       // Text/Background light
+            OfficeCompatibility.SetThemeColor(master.Theme.ThemeColorScheme, 5, ColorTranslator.ToOle(DarkTheme.Accent));        // Accent 1
+            OfficeCompatibility.SetThemeColor(master.Theme.ThemeColorScheme, 6, ColorTranslator.ToOle(Color.FromArgb(255, 143, 0))); // Accent 2 - Orange
+            OfficeCompatibility.SetThemeColor(master.Theme.ThemeColorScheme, 7, ColorTranslator.ToOle(DarkTheme.Success));       // Accent 3
+            OfficeCompatibility.SetThemeColor(master.Theme.ThemeColorScheme, 8, ColorTranslator.ToOle(Color.FromArgb(232, 17, 35))); // Accent 4 - Red
 
-            // Set default font for the presentation using Name property
-            master.Theme.ThemeFontScheme.MajorFont.Name = Fonts.Heading;
-            master.Theme.ThemeFontScheme.MinorFont.Name = Fonts.Body;
+            // Set default font for the presentation using compatibility helper
+            OfficeCompatibility.SetThemeFont(master.Theme.ThemeFontScheme.MajorFont, Fonts.Heading);
+            OfficeCompatibility.SetThemeFont(master.Theme.ThemeFontScheme.MinorFont, Fonts.Body);
         }
 
         #endregion

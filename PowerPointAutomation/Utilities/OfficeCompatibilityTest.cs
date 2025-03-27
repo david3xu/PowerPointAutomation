@@ -1,9 +1,11 @@
 using System;
 using System.Drawing;
 using Microsoft.Office.Core;
+using PowerPointShape = Microsoft.Office.Interop.PowerPoint.Shape;
 using Microsoft.Office.Interop.PowerPoint;
 using System.Runtime.InteropServices;
 using System.IO;
+using System.Reflection;
 
 namespace PowerPointAutomation.Utilities
 {
@@ -98,11 +100,24 @@ namespace PowerPointAutomation.Utilities
                 
                 try
                 {
-                    // Try direct method call (Office 2016+ approach)
-                    master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorAccent1).RGB = 
-                        ColorTranslator.ToOle(Color.Red);
-                    directMethodWorked = true;
-                    writer.WriteLine("Direct method call worked (Office 2016+ approach)");
+                    // Try direct method call with reflection to avoid enum problems
+                    var colorScheme = master.Theme.ThemeColorScheme;
+                    var colorsMethod = colorScheme.GetType().GetMethod("Colors", new Type[] { typeof(int) });
+                    
+                    if (colorsMethod != null)
+                    {
+                        // Use index 5 for Accent1 (equivalent to MsoThemeColorSchemeIndex.msoThemeColorAccent1)
+                        var color = colorsMethod.Invoke(colorScheme, new object[] { 5 });
+                        
+                        // Set RGB value using reflection
+                        var rgbProperty = color.GetType().GetProperty("RGB");
+                        if (rgbProperty != null)
+                        {
+                            rgbProperty.SetValue(color, ColorTranslator.ToOle(Color.Red));
+                            directMethodWorked = true;
+                            writer.WriteLine("Direct method call worked using reflection");
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -170,23 +185,26 @@ namespace PowerPointAutomation.Utilities
                 
                 try
                 {
-                    // Try direct property access (varies by version)
+                    // Try direct property access using reflection
                     var font = master.Theme.ThemeFontScheme.MajorFont;
                     var fontType = font.GetType();
                     
-                    try {
-                        // Try Latin property (newer versions)
-                        font.Latin = "Arial";
-                        writer.WriteLine("Latin property worked (newer versions)");
+                    // Try Name property first
+                    var nameProperty = fontType.GetProperty("Name");
+                    if (nameProperty != null)
+                    {
+                        nameProperty.SetValue(font, "Arial");
+                        writer.WriteLine("Name property worked using reflection");
                         directMethodWorked = true;
                     }
-                    catch (Exception) {
-                        // Try Name property (older versions)
-                        var nameProperty = fontType.GetProperty("Name");
-                        if (nameProperty != null)
+                    else
+                    {
+                        // Try Latin property
+                        var latinProperty = fontType.GetProperty("Latin");
+                        if (latinProperty != null)
                         {
-                            nameProperty.SetValue(font, "Arial");
-                            writer.WriteLine("Name property worked (older versions)");
+                            latinProperty.SetValue(font, "Arial");
+                            writer.WriteLine("Latin property worked using reflection");
                             directMethodWorked = true;
                         }
                     }
@@ -250,7 +268,7 @@ namespace PowerPointAutomation.Utilities
                 
                 // Add a slide with text
                 Slide slide = presentation.Slides.Add(1, PpSlideLayout.ppLayoutText);
-                Shape textShape = slide.Shapes[2]; // Text placeholder
+                PowerPointShape textShape = slide.Shapes[2]; // Text placeholder using qualified name
                 TextRange textRange = textShape.TextFrame.TextRange;
                 textRange.Text = "Test paragraph indentation";
                 
@@ -312,17 +330,33 @@ namespace PowerPointAutomation.Utilities
                 
                 try
                 {
-                    // Try direct cast (may fail in some versions)
-                    var chart1 = slide.Shapes.AddSmartArt(
-                        (SmartArtLayout)1,
-                        100, 100, 400, 300);
-                    
-                    directCastWorked = true;
-                    writer.WriteLine("Direct SmartArt layout cast worked");
+                    // Try direct access to SmartArtLayouts (without casting)
+                    var layoutsProperty = slide.Application.GetType().GetProperty("SmartArtLayouts");
+                    if (layoutsProperty != null)
+                    {
+                        var layouts = layoutsProperty.GetValue(slide.Application);
+                        
+                        // Get the layout at index 1
+                        var layoutsType = layouts.GetType();
+                        var itemProperty = layoutsType.GetProperty("Item");
+                        if (itemProperty != null)
+                        {
+                            var layout = itemProperty.GetValue(layouts, new object[] { 1 });
+                            
+                            // Use the layout to create SmartArt
+                            dynamic dynamicLayout = layout; // Convert to dynamic to avoid type mismatch
+                            var chart1 = slide.Shapes.AddSmartArt(
+                                dynamicLayout,
+                                100, 100, 400, 300);
+                            
+                            directCastWorked = true;
+                            writer.WriteLine("Direct SmartArt layout access worked using reflection");
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
-                    writer.WriteLine($"Direct SmartArt layout cast failed: {ex.Message}");
+                    writer.WriteLine($"Direct SmartArt layout access failed: {ex.Message}");
                 }
                 
                 try
@@ -332,8 +366,10 @@ namespace PowerPointAutomation.Utilities
                     
                     if (layout != null)
                     {
+                        // Use dynamic to handle the type conversion at runtime
+                        dynamic dynamicLayout = layout;
                         var chart2 = slide.Shapes.AddSmartArt(
-                            layout,
+                            dynamicLayout,
                             100, 100, 400, 300);
                             
                         compatibilityMethodWorked = true;

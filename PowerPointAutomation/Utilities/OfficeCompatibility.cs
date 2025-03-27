@@ -42,7 +42,32 @@ namespace PowerPointAutomation.Utilities
             try
             {
                 // Approach 2: Try indexer syntax (works with most versions)
-                colorScheme.Colors[colorIndex].RGB = rgb;
+                // First, get the Colors property (which might return a collection)
+                var colorsProperty = colorScheme.GetType().GetProperty("Colors");
+                if (colorsProperty != null)
+                {
+                    // Get the collection object
+                    var colorsCollection = colorsProperty.GetValue(colorScheme);
+                    
+                    // Try to access the indexer through the collection's Item property
+                    var itemProperty = colorsCollection.GetType().GetProperty("Item");
+                    if (itemProperty != null)
+                    {
+                        // Get the color at the specified index
+                        var color = itemProperty.GetValue(colorsCollection, new object[] { colorIndex });
+                        
+                        // Set the RGB value using reflection
+                        var rgbProperty = color.GetType().GetProperty("RGB");
+                        if (rgbProperty != null)
+                        {
+                            rgbProperty.SetValue(color, rgb);
+                            return;
+                        }
+                    }
+                }
+                
+                // If we get here, we couldn't use the indexer approach either
+                throw new Exception("Could not set theme color using indexer");
             }
             catch (Exception ex)
             {
@@ -60,22 +85,26 @@ namespace PowerPointAutomation.Utilities
         {
             try
             {
-                // Approach 1: Try Latin property (newer versions)
-                font.Latin = fontName;
-                return;
-            }
-            catch
-            {
-                // Latin approach failed, silent fallthrough to next approach
-            }
-
-            try
-            {
-                // Approach 2: Try Name property (older versions)
+                // Try Name property first (older versions)
                 var nameProperty = font.GetType().GetProperty("Name");
                 if (nameProperty != null)
                 {
                     nameProperty.SetValue(font, fontName);
+                    return;
+                }
+            }
+            catch
+            {
+                // Name property approach failed, silent fallthrough to next approach
+            }
+
+            try
+            {
+                // Try Latin property (newer versions) using reflection
+                var latinProperty = font.GetType().GetProperty("Latin");
+                if (latinProperty != null)
+                {
+                    latinProperty.SetValue(font, fontName);
                     return;
                 }
             }

@@ -4,6 +4,7 @@ using Microsoft.Office.Core;
 using PowerPointShape = Microsoft.Office.Interop.PowerPoint.Shape;
 using Microsoft.Office.Interop.PowerPoint;
 using System.Runtime.InteropServices;
+using PowerPointAutomation.Utilities;
 
 namespace PowerPointAutomation.Slides
 {
@@ -255,8 +256,19 @@ namespace PowerPointAutomation.Slides
                     textRange.InsertAfter("\r");
 
                 TextRange bulletPoint = textRange.InsertAfter(bullets[i]);
-                bulletPoint.ParagraphFormat.FirstLineIndent = 5;
-                bulletPoint.ParagraphFormat.LeftIndent = 10;
+                
+                // Use compatibility layer for paragraph indentation
+                bool indentSuccess = OfficeCompatibility.SetParagraphIndentation(
+                    bulletPoint.ParagraphFormat, 5, 10);
+                    
+                // If indentation properties failed, use visual indentation as fallback
+                if (!indentSuccess)
+                {
+                    // Replace the text with indented text
+                    string indentedText = "    " + bullets[i]; // 4 spaces for visual indent
+                    bulletPoint.Text = indentedText;
+                }
+                
                 bulletPoint.Font.Size = 14;
                 bulletPoint.Font.Color.RGB = ColorTranslator.ToOle(Color.FromArgb(89, 89, 89));
             }
