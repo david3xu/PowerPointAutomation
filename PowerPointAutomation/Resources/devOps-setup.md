@@ -18,12 +18,17 @@ az devops configure --defaults organization=https://dev.azure.com/YOUR-ORGANIZAT
 
 # Set default project
 az devops configure --defaults project=YOUR-PROJECT-NAME
-
-# Create a new repository
-az repos create --name PowerPointAutomation
 ```
 
-## 2. Configuring the Development Environment
+## 2. Cloning the Repository
+
+```bash
+# Clone the repository
+git clone https://dev.azure.com/YOUR-ORGANIZATION/YOUR-PROJECT-NAME/_git/PowerPointAutomation
+cd PowerPointAutomation
+```
+
+## 3. Configuring the Development Environment
 Set up your Azure VM with the necessary tools:
 
 ```bash
@@ -47,32 +52,6 @@ sudo apt install -y mono-complete
 sudo apt-get install -y powershell
 ```
 
-## 3. Project Directory Structure Setup
-
-```bash
-# Create project directory structure
-mkdir -p PowerPointAutomation/Models PowerPointAutomation/Slides PowerPointAutomation/Utilities PowerPointAutomation/Resources PowerPointAutomation/Properties
-
-# Create main program files
-touch PowerPointAutomation/Program.cs PowerPointAutomation/KnowledgeGraphPresentation.cs
-
-# Create model files
-touch PowerPointAutomation/Models/SlideContent.cs PowerPointAutomation/Models/KnowledgeGraphData.cs
-
-# Create slide generator files
-touch PowerPointAutomation/Slides/TitleSlide.cs PowerPointAutomation/Slides/ContentSlide.cs PowerPointAutomation/Slides/DiagramSlide.cs PowerPointAutomation/Slides/ConclusionSlide.cs
-
-# Create utility files
-touch PowerPointAutomation/Utilities/ComReleaser.cs PowerPointAutomation/Utilities/PresentationStyles.cs PowerPointAutomation/Utilities/AnimationHelper.cs
-
-# Create resource files directory
-mkdir -p PowerPointAutomation/Resources/Images
-touch PowerPointAutomation/Resources/placeholder.txt
-
-# Create basic configuration files
-touch PowerPointAutomation/PowerPointAutomation.csproj
-```
-
 ## 4. Creating the .NET Project
 
 ```bash
@@ -80,7 +59,7 @@ touch PowerPointAutomation/PowerPointAutomation.csproj
 dotnet new console --output PowerPointAutomation --force
 
 # Add package references
-dotnet add PowerPointAutomation package DocumentFormat.OpenXml
+dotnet add PowerPointAutomation package Microsoft.Office.Interop.PowerPoint
 dotnet add PowerPointAutomation package System.Drawing.Common
 ```
 
@@ -96,7 +75,7 @@ cat > PowerPointAutomation/PowerPointAutomation.csproj << 'EOF'
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="DocumentFormat.OpenXml" Version="2.16.0" />
+    <PackageReference Include="Microsoft.Office.Interop.PowerPoint" Version="15.0.0" />
     <PackageReference Include="System.Drawing.Common" Version="6.0.0" />
   </ItemGroup>
   <ItemGroup>
@@ -115,6 +94,7 @@ EOF
 cat > PowerPointAutomation/Program.cs << 'EOF'
 using System;
 using System.IO;
+using Microsoft.Office.Interop.PowerPoint;
 
 namespace PowerPointAutomation
 {
@@ -122,12 +102,17 @@ namespace PowerPointAutomation
     {
         static void Main(string[] args)
         {
-            string outputPath = Path.Combine(Environment.CurrentDirectory, "KnowledgeGraph.pptx");
-            Console.WriteLine("Creating Knowledge Graph presentation...");
+            Application pptApplication = new Application();
+            Presentations presentations = pptApplication.Presentations;
+            Presentation presentation = presentations.Add(MsoTriState.msoTrue);
+            Console.WriteLine("Creating PowerPoint Presentation...");
             try
             {
-                Console.WriteLine("Presentation generation not yet implemented");
-                Console.WriteLine($"Presentation would be saved to: {outputPath}");
+                string outputPath = Path.Combine(Environment.CurrentDirectory, "KnowledgeGraph.pptx");
+                presentation.SaveAs(outputPath);
+                presentation.Close();
+                pptApplication.Quit();
+                Console.WriteLine($"Presentation saved to: {outputPath}");
             }
             catch (Exception ex)
             {
@@ -146,27 +131,7 @@ dotnet build PowerPointAutomation
 dotnet run --project PowerPointAutomation
 ```
 
-## 7. Handling Office Interop on Linux
-
-Since Office Interop is not natively supported on Linux, consider using OpenXML SDK:
-
-```csharp
-using DocumentFormat.OpenXml;
-using DocumentFormat.OpenXml.Packaging;
-using DocumentFormat.OpenXml.Presentation;
-using Drawing = DocumentFormat.OpenXml.Drawing;
-
-// Create a presentation
-using (PresentationDocument presentationDocument =
-       PresentationDocument.Create(outputPath, PresentationDocumentType.Presentation))
-{
-    PresentationPart presentationPart = presentationDocument.AddPresentationPart();
-    presentationPart.Presentation = new Presentation();
-    // Add slide parts and content here
-}
-```
-
-## 8. CI/CD Pipeline with Azure Pipelines
+## 7. CI/CD Pipeline with Azure Pipelines
 
 ```yaml
 trigger:
@@ -205,7 +170,7 @@ steps:
     artifactName: 'PowerPointAutomation'
 ```
 
-## 9. Debugging and Testing
+## 8. Debugging and Testing
 
 ```bash
 # Run with debugging
