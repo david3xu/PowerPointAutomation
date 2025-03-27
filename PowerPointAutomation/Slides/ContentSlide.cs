@@ -249,7 +249,7 @@ namespace PowerPointAutomation.Slides
             TextRange textRange = textShape.TextFrame.TextRange;
             textRange.Text = "";
 
-            // Track indentation level (0 = main bullet, 1 = sub-bullet)
+            // Track indentation level
             int currentIndentLevel = 0;
 
             // Add each bullet point with formatting based on indentation
@@ -275,7 +275,7 @@ namespace PowerPointAutomation.Slides
                 // Add the bullet point text
                 TextRange newBullet = textRange.InsertAfter(bulletText);
 
-                // Format bullet based on level (customize appearance without using IndentLevel)
+                // Format bullet based on level
                 if (currentIndentLevel == 0)
                 {
                     // Main bullet - use default bullet formatting
@@ -286,18 +286,32 @@ namespace PowerPointAutomation.Slides
                 }
                 else
                 {
-                    // Sub-bullet - indent manually using compatible properties
-                    // Apply indentation for sub-bullets
-                    // Use FirstLineIndent and LeftIndent instead of First and Left
-                    newBullet.ParagraphFormat.FirstLineIndent = 10;
-                    newBullet.ParagraphFormat.LeftIndent = 10;
+                    // Sub-bullet - use compatibility layer for indentation
+                    bool indentSuccess = OfficeCompatibility.SetParagraphIndentation(
+                        newBullet.ParagraphFormat, 10, 20);
+                        
+                    // If indentation properties failed, use visual indentation as fallback
+                    if (!indentSuccess)
+                    {
+                        // Replace the text with indented text
+                        string indentedText = "    " + bulletText; // 4 spaces for visual indent
+                        newBullet.Text = indentedText;
+                    }
+                    
                     newBullet.Font.Size = 20;
                     newBullet.Font.Bold = MsoTriState.msoFalse;
                     newBullet.Font.Color.RGB = ColorTranslator.ToOle(secondaryColor);
                 }
 
                 // Add spacing between bullets
-                newBullet.ParagraphFormat.SpaceAfter = 6;
+                try
+                {
+                    newBullet.ParagraphFormat.SpaceAfter = 6;
+                }
+                catch
+                {
+                    // Space after not supported in this version - ignore
+                }
             }
         }
     }

@@ -42,37 +42,40 @@ namespace PowerPointAutomation
         {
             try
             {
-                // Initialize PowerPoint application
-                InitializePowerPoint();
+                // Log Office version for diagnostic purposes
+                Console.WriteLine($"Detected Office version: {OfficeCompatibility.GetOfficeVersion()}");
+
+                // Initialize PowerPoint application with operation logging
+                OfficeCompatibility.LogOperation("Initialize PowerPoint", () => InitializePowerPoint());
 
                 // Apply custom theme
-                ApplyCustomTheme();
+                OfficeCompatibility.LogOperation("Apply Custom Theme", () => ApplyCustomTheme());
 
                 // Get slide layouts
-                SetupSlideLayouts();
+                OfficeCompatibility.LogOperation("Setup Slide Layouts", () => SetupSlideLayouts());
 
-                // Create slides
-                CreateTitleSlide();
-                CreateIntroductionSlide();
-                CreateCoreComponentsSlide();
-                CreateStructuralExampleSlide();
-                CreateTheoreticalFoundationsSlide();
-                CreateImplementationTechnologiesSlide();
-                CreateConstructionApproachesSlide();
-                CreateMachineLearningIntegrationSlide();
-                CreateApplicationsUseCasesSlide();
-                CreateAdvantagesChallengesSlide();
-                CreateFutureDirectionsSlide();
-                CreateConclusionSlide();
+                // Create slides with operation logging
+                OfficeCompatibility.LogOperation("Create Title Slide", () => CreateTitleSlide());
+                OfficeCompatibility.LogOperation("Create Introduction Slide", () => CreateIntroductionSlide());
+                OfficeCompatibility.LogOperation("Create Core Components Slide", () => CreateCoreComponentsSlide());
+                OfficeCompatibility.LogOperation("Create Structural Example Slide", () => CreateStructuralExampleSlide());
+                OfficeCompatibility.LogOperation("Create Theoretical Foundations Slide", () => CreateTheoreticalFoundationsSlide());
+                OfficeCompatibility.LogOperation("Create Implementation Technologies Slide", () => CreateImplementationTechnologiesSlide());
+                OfficeCompatibility.LogOperation("Create Construction Approaches Slide", () => CreateConstructionApproachesSlide());
+                OfficeCompatibility.LogOperation("Create Machine Learning Integration Slide", () => CreateMachineLearningIntegrationSlide());
+                OfficeCompatibility.LogOperation("Create Applications UseCases Slide", () => CreateApplicationsUseCasesSlide());
+                OfficeCompatibility.LogOperation("Create Advantages Challenges Slide", () => CreateAdvantagesChallengesSlide());
+                OfficeCompatibility.LogOperation("Create Future Directions Slide", () => CreateFutureDirectionsSlide());
+                OfficeCompatibility.LogOperation("Create Conclusion Slide", () => CreateConclusionSlide());
 
                 // Add transitions between slides
-                AddSlideTransitions();
+                OfficeCompatibility.LogOperation("Add Slide Transitions", () => AddSlideTransitions());
 
                 // Add footer to all slides
-                AddFooterToAllSlides();
+                OfficeCompatibility.LogOperation("Add Footer To All Slides", () => AddFooterToAllSlides());
 
                 // Save the presentation
-                presentation.SaveAs(outputPath);
+                OfficeCompatibility.LogOperation("Save Presentation", () => presentation.SaveAs(outputPath));
 
                 Console.WriteLine("Presentation created successfully!");
             }
@@ -117,17 +120,17 @@ namespace PowerPointAutomation
             // Set background color
             master.Background.Fill.ForeColor.RGB = ColorTranslator.ToOle(Color.White);
 
-            // Set theme colors using proper method call syntax rather than indexer
-            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorText).RGB = ColorTranslator.ToOle(primaryColor);     // Text/Background dark
-            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorBackground).RGB = ColorTranslator.ToOle(Color.White);      // Text/Background light
-            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorAccent1).RGB = ColorTranslator.ToOle(secondaryColor);   // Accent 1
-            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorAccent2).RGB = ColorTranslator.ToOle(accentColor);      // Accent 2
-            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorAccent3).RGB = ColorTranslator.ToOle(Color.FromArgb(146, 208, 80));  // Accent 3 - Green
-            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorAccent4).RGB = ColorTranslator.ToOle(Color.FromArgb(0, 176, 240));   // Accent 4 - Light blue
+            // Set theme colors using the compatibility layer instead of direct method calls
+            OfficeCompatibility.SetThemeColor(master.Theme.ThemeColorScheme, 1, ColorTranslator.ToOle(primaryColor));     // Text/Background dark (index 1)
+            OfficeCompatibility.SetThemeColor(master.Theme.ThemeColorScheme, 2, ColorTranslator.ToOle(Color.White));      // Text/Background light (index 2)
+            OfficeCompatibility.SetThemeColor(master.Theme.ThemeColorScheme, 5, ColorTranslator.ToOle(secondaryColor));   // Accent 1 (index 5)
+            OfficeCompatibility.SetThemeColor(master.Theme.ThemeColorScheme, 6, ColorTranslator.ToOle(accentColor));      // Accent 2 (index 6)
+            OfficeCompatibility.SetThemeColor(master.Theme.ThemeColorScheme, 7, ColorTranslator.ToOle(Color.FromArgb(146, 208, 80)));  // Accent 3 (index 7)
+            OfficeCompatibility.SetThemeColor(master.Theme.ThemeColorScheme, 8, ColorTranslator.ToOle(Color.FromArgb(0, 176, 240)));   // Accent 4 (index 8)
 
-            // Set default font for the presentation using the Name property directly
-            master.Theme.ThemeFontScheme.MajorFont.Name = "Segoe UI";
-            master.Theme.ThemeFontScheme.MinorFont.Name = "Segoe UI";
+            // Set default font for the presentation using the compatibility layer
+            OfficeCompatibility.SetThemeFont(master.Theme.ThemeFontScheme.MajorFont, "Segoe UI");
+            OfficeCompatibility.SetThemeFont(master.Theme.ThemeFontScheme.MinorFont, "Segoe UI");
         }
 
         /// <summary>
@@ -404,61 +407,135 @@ namespace PowerPointAutomation
         }
 
         /// <summary>
-        /// Creates a slide about applications and use cases of knowledge graphs
+        /// Creates a slide about real-world applications and use cases
         /// </summary>
         private void CreateApplicationsUseCasesSlide()
         {
             Console.WriteLine("Creating applications and use cases slide...");
 
-            var contentSlideGenerator = new ContentSlide(presentation, contentLayout);
+            // Add slide with title layout
+            Slide slide = presentation.Slides.AddSlide(presentation.Slides.Count + 1, contentLayout);
 
-            var slide = contentSlideGenerator.Generate(
-                "Applications & Use Cases",
-                new string[] {
-                    "Enterprise Knowledge Management",
-                    "� Corporate memory, expertise location, document management",
-                    "Search and Recommendation Systems",
-                    "� Semantic search, context-aware recommendations, knowledge panels",
-                    "Research and Discovery",
-                    "� Scientific literature analysis, drug discovery, patent analysis",
-                    "Customer Intelligence",
-                    "� 360� customer view, journey mapping, nuanced segmentation",
-                    "Compliance and Risk Management",
-                    "� Regulatory compliance, fraud detection, anti-money laundering"
-                },
-                "This slide showcases diverse applications of knowledge graphs across domains. " +
-                "The hierarchical structure organizes use cases by industry or function. The " +
-                "progressive disclosure through animation helps the audience focus on one " +
-                "application area at a time.",
-                true // Enable animations
+            // Set slide title
+            slide.Shapes.Title.TextFrame.TextRange.Text = "Applications & Use Cases";
+            slide.Shapes.Title.TextFrame.TextRange.Font.Size = 36;
+            slide.Shapes.Title.TextFrame.TextRange.Font.Bold = MsoTriState.msoTrue;
+            slide.Shapes.Title.TextFrame.TextRange.Font.Color.RGB = ColorTranslator.ToOle(primaryColor);
+
+            // Add title underline
+            PowerPointShape titleUnderline = slide.Shapes.AddLine(
+                slide.Shapes.Title.Left,
+                slide.Shapes.Title.Top + slide.Shapes.Title.Height + 5,
+                slide.Shapes.Title.Left + slide.Shapes.Title.Width * 0.4f,
+                slide.Shapes.Title.Top + slide.Shapes.Title.Height + 5
             );
+            titleUnderline.Line.ForeColor.RGB = ColorTranslator.ToOle(accentColor);
+            titleUnderline.Line.Weight = 3.0f;
 
-            // Add an SmartArt diagram to illustrate the use cases using numeric value
-            var chart = slide.Shapes.AddSmartArt(
-                (SmartArtLayout)1, // Use cycle layout by numeric value to avoid enum compatibility issues
-                slide.Design.SlideMaster.Width - 350, // Right side
-                240, // Y position
-                300, // Width
-                300  // Height
+            // Add introduction text
+            PowerPointShape introTextBox = slide.Shapes.AddTextbox(
+                MsoTextOrientation.msoTextOrientationHorizontal,
+                50, 100, 640, 80
             );
+            introTextBox.TextFrame.TextRange.Text = "Knowledge graphs power a wide range of applications across industries:";
+            introTextBox.TextFrame.TextRange.Font.Size = 20;
+            introTextBox.TextFrame.TextRange.Font.Color.RGB = ColorTranslator.ToOle(secondaryColor);
 
-            // Get the SmartArt nodes and customize them
-            if (chart.SmartArt != null)
+            // Calculate SmartArt position
+            float smartArtLeft = 50;
+            float smartArtTop = 180;
+            float smartArtWidth = 640;
+            float smartArtHeight = 300;
+
+            // Get SmartArt layout using compatibility layer
+            object smartArtLayout = OfficeCompatibility.GetSmartArtLayout(slide.Application, 1); // Cycle layout
+
+            // Add SmartArt if layout is available
+            if (smartArtLayout != null)
             {
-                chart.SmartArt.AllNodes[0].TextFrame2.TextRange.Text = "Knowledge Graphs";
-                chart.SmartArt.AllNodes[1].TextFrame2.TextRange.Text = "Enterprise";
-                chart.SmartArt.AllNodes[2].TextFrame2.TextRange.Text = "Search";
-                chart.SmartArt.AllNodes[3].TextFrame2.TextRange.Text = "Research";
-                chart.SmartArt.AllNodes[4].TextFrame2.TextRange.Text = "Customer";
-                chart.SmartArt.AllNodes[5].TextFrame2.TextRange.Text = "Compliance";
+                // Add SmartArt diagram using compatibility-safe approach
+                var chart = slide.Shapes.AddSmartArt(
+                    smartArtLayout, 
+                    smartArtLeft, smartArtTop, smartArtWidth, smartArtHeight);
 
-                // Add animation to the SmartArt
-                var effect = slide.TimeLine.MainSequence.AddEffect(
-                    chart,
-                    MsoAnimEffect.msoAnimEffectFade,
-                    MsoAnimateByLevel.msoAnimateLevelNone,
-                    MsoAnimTriggerType.msoAnimTriggerAfterPrevious);
+                // Get the SmartArt nodes and customize them
+                if (chart.SmartArt != null)
+                {
+                    try
+                    {
+                        chart.SmartArt.AllNodes[0].TextFrame2.TextRange.Text = "Knowledge Graphs";
+                        chart.SmartArt.AllNodes[1].TextFrame2.TextRange.Text = "Enterprise";
+                        chart.SmartArt.AllNodes[2].TextFrame2.TextRange.Text = "Search";
+                        chart.SmartArt.AllNodes[3].TextFrame2.TextRange.Text = "Research";
+                        chart.SmartArt.AllNodes[4].TextFrame2.TextRange.Text = "Customer";
+                        chart.SmartArt.AllNodes[5].TextFrame2.TextRange.Text = "Compliance";
+
+                        // Add animation to the SmartArt
+                        slide.TimeLine.MainSequence.AddEffect(
+                            chart,
+                            MsoAnimEffect.msoAnimEffectFade,
+                            MsoAnimateByLevel.msoAnimateLevelAllAtOnce,
+                            MsoAnimTriggerType.msoAnimTriggerWithPrevious);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log SmartArt text setting error for debugging
+                        Console.WriteLine($"Error setting SmartArt text: {ex.Message}");
+                    }
+                }
             }
+            else
+            {
+                // Fallback: Create a simple shape layout instead of SmartArt
+                PowerPointShape fallbackShape = slide.Shapes.AddShape(
+                    MsoAutoShapeType.msoShapeRoundedRectangle,
+                    smartArtLeft + smartArtWidth/3, smartArtTop, smartArtWidth/3, 60);
+                
+                fallbackShape.TextFrame.TextRange.Text = "Knowledge Graphs";
+                fallbackShape.TextFrame.TextRange.Font.Size = 24;
+                fallbackShape.TextFrame.TextRange.Font.Bold = MsoTriState.msoTrue;
+                fallbackShape.TextFrame.TextRange.Font.Color.RGB = ColorTranslator.ToOle(Color.White);
+                fallbackShape.Fill.ForeColor.RGB = ColorTranslator.ToOle(primaryColor);
+                
+                // Create circle shapes for use cases around the center box
+                CreateUseCase(slide, "Enterprise", smartArtLeft + 60, smartArtTop + 100);
+                CreateUseCase(slide, "Search", smartArtLeft + smartArtWidth - 150, smartArtTop + 100);
+                CreateUseCase(slide, "Research", smartArtLeft + 60, smartArtTop + 200);
+                CreateUseCase(slide, "Customer", smartArtLeft + smartArtWidth - 150, smartArtTop + 200);
+                CreateUseCase(slide, "Compliance", smartArtLeft + smartArtWidth/2 - 45, smartArtTop + 250);
+            }
+
+            // Add speaker notes
+            slide.NotesPage.Shapes[2].TextFrame.TextRange.Text =
+                "This slide highlights how knowledge graphs are applied across different domains. " +
+                "The diagram shows various industries and applications. In enterprise settings, " +
+                "knowledge graphs connect disparate data sources. For search, they enhance relevance " +
+                "and context. Research applications leverage connections to find new insights. " +
+                "Customer applications include recommendation engines and personalization. " +
+                "Compliance applications use knowledge graphs for risk assessment and audit trails.";
+        }
+        
+        /// <summary>
+        /// Helper method to create a use case bubble (for SmartArt fallback)
+        /// </summary>
+        private void CreateUseCase(Slide slide, string text, float left, float top)
+        {
+            PowerPointShape circle = slide.Shapes.AddShape(
+                MsoAutoShapeType.msoShapeOval,
+                left, top, 90, 90);
+                
+            circle.TextFrame.TextRange.Text = text;
+            circle.TextFrame.TextRange.Font.Size = 18;
+            circle.TextFrame.TextRange.Font.Bold = MsoTriState.msoTrue;
+            circle.TextFrame.TextRange.Font.Color.RGB = ColorTranslator.ToOle(Color.White);
+            circle.Fill.ForeColor.RGB = ColorTranslator.ToOle(secondaryColor);
+            
+            // Add connector line to main shape
+            PowerPointShape connector = slide.Shapes.AddLine(
+                left + 45, top, 
+                left + 45, top - 20);
+            connector.Line.ForeColor.RGB = ColorTranslator.ToOle(accentColor);
+            connector.Line.Weight = 2.0f;
         }
 
         /// <summary>
@@ -603,29 +680,69 @@ namespace PowerPointAutomation
         }
 
         /// <summary>
-        /// Properly releases COM objects to prevent memory leaks
+        /// Cleans up COM objects to prevent memory leaks and orphaned processes
         /// </summary>
         private void CleanupComObjects()
         {
             Console.WriteLine("Cleaning up COM objects...");
 
-            // Use the utility to safely release COM objects
-            if (presentation != null)
+            // Perform cleanup in reverse order (most recently created objects first)
+            try
             {
-                Marshal.ReleaseComObject(presentation);
-                presentation = null;
-            }
+                // Close presentation without saving changes
+                if (presentation != null)
+                {
+                    try
+                    {
+                        // Try to close the presentation without saving
+                        presentation.Close();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error closing presentation: {ex.Message}");
+                    }
+                    
+                    // Release COM object
+                    object presObj = presentation;
+                    presentation = null;
+                    ComReleaser.ReleaseCOMObject(ref presObj);
+                }
 
-            if (pptApp != null)
+                // Quit PowerPoint application
+                if (pptApp != null)
+                {
+                    try
+                    {
+                        // Try to quit the application
+                        pptApp.Quit();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error quitting PowerPoint: {ex.Message}");
+                    }
+                    
+                    // Release COM object
+                    object appObj = pptApp;
+                    pptApp = null;
+                    ComReleaser.ReleaseCOMObject(ref appObj);
+                }
+            }
+            finally
             {
-                pptApp.Quit();
-                Marshal.ReleaseComObject(pptApp);
-                pptApp = null;
+                // Release all other tracked COM objects
+                ComReleaser.ReleaseAllTrackedObjects();
+                
+                // Force garbage collection
+                ComReleaser.FinalCleanup();
+                
+                // Check if PowerPoint process is still running
+                if (ComReleaser.IsProcessRunning("POWERPNT"))
+                {
+                    Console.WriteLine("Warning: PowerPoint process is still running. Attempting to terminate...");
+                    int killed = ComReleaser.KillProcess("POWERPNT");
+                    Console.WriteLine($"Terminated {killed} PowerPoint process(es).");
+                }
             }
-
-            // Force garbage collection to clean up any remaining COM objects
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
         }
     }
 }

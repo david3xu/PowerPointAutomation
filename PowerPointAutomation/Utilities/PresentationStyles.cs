@@ -129,16 +129,16 @@ namespace PowerPointAutomation.Utilities
             master.Background.Fill.ForeColor.RGB = ColorTranslator.ToOle(Color.White);
 
             // Set theme colors using method calls instead of indexer
-            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorText).RGB = ColorTranslator.ToOle(BlueTheme.Primary);     // Text/Background dark
-            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorBackground).RGB = ColorTranslator.ToOle(Color.White);    // Text/Background light
-            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorAccent1).RGB = ColorTranslator.ToOle(BlueTheme.Secondary); // Accent 1
-            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorAccent2).RGB = ColorTranslator.ToOle(BlueTheme.Accent);   // Accent 2
-            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorAccent3).RGB = ColorTranslator.ToOle(BlueTheme.Success);  // Accent 3
-            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorAccent4).RGB = ColorTranslator.ToOle(Color.FromArgb(0, 176, 240)); // Accent 4
+            master.Theme.ThemeColorScheme.Colors[1].RGB = ColorTranslator.ToOle(BlueTheme.Primary);     // Text/Background dark
+            master.Theme.ThemeColorScheme.Colors[2].RGB = ColorTranslator.ToOle(Color.White);     // Text/Background light
+            master.Theme.ThemeColorScheme.Colors[5].RGB = ColorTranslator.ToOle(BlueTheme.Secondary); // Accent 1
+            master.Theme.ThemeColorScheme.Colors[6].RGB = ColorTranslator.ToOle(BlueTheme.Accent);   // Accent 2
+            master.Theme.ThemeColorScheme.Colors[7].RGB = ColorTranslator.ToOle(BlueTheme.Success);  // Accent 3
+            master.Theme.ThemeColorScheme.Colors[8].RGB = ColorTranslator.ToOle(Color.FromArgb(0, 176, 240)); // Accent 4
 
             // Set default font for the presentation using Name property
-            master.Theme.ThemeFontScheme.MajorFont.Name = Fonts.Heading;
-            master.Theme.ThemeFontScheme.MinorFont.Name = Fonts.Body;
+            master.Theme.ThemeFontScheme.MajorFont.Latin = Fonts.Heading;
+            master.Theme.ThemeFontScheme.MinorFont.Latin = Fonts.Body;
         }
 
         /// <summary>
