@@ -1,0 +1,18 @@
+﻿*.
+*.jpg binary
+*.png binary
+# Denote all files that are truly binary and should not be modified
+gif binary
+*.cmd text eol=crlf
+*.bat text eol=crlf
+# Declare files that will always have CRLF line endings on checkout
+
+*.sln text
+*.csproj text
+*.cs text
+*.md text
+# to native line endings on checkout
+# Explicitly declare text files you want to always be normalized and converted
+
+* text=auto
+# Set default behavior to automatically normalize line endings
