@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using Microsoft.Office.Core;
+using PowerPointShape = Microsoft.Office.Interop.PowerPoint.Shape;
 using Microsoft.Office.Interop.PowerPoint;
 using System.Runtime.InteropServices;
 
@@ -39,7 +40,7 @@ namespace PowerPointAutomation.Slides
         /// <param name="contactInfo">Optional contact information</param>
         /// <param name="notes">Optional speaker notes</param>
         /// <returns>The created slide</returns>
-        public Slide Generate(
+        public Microsoft.Office.Interop.PowerPoint.Slide Generate(
             string title,
             string conclusionText,
             string thankYouText = "Thank You!",
@@ -47,7 +48,7 @@ namespace PowerPointAutomation.Slides
             string notes = null)
         {
             // Add conclusion slide
-            Slide slide = presentation.Slides.AddSlide(presentation.Slides.Count + 1, layout);
+            Microsoft.Office.Interop.PowerPoint.Slide slide = presentation.Slides.AddSlide(presentation.Slides.Count + 1, layout);
 
             // Set title with custom formatting
             slide.Shapes.Title.TextFrame.TextRange.Text = title;
@@ -61,7 +62,7 @@ namespace PowerPointAutomation.Slides
             // Set conclusion text in the content placeholder (typically shape index 2)
             if (slide.Shapes.Count > 1)
             {
-                Shape contentShape = slide.Shapes[2];
+                PowerPointShape contentShape = slide.Shapes[2];
                 contentShape.TextFrame.TextRange.Text = conclusionText;
                 contentShape.TextFrame.TextRange.Font.Size = 20;
                 contentShape.TextFrame.TextRange.ParagraphFormat.Alignment = PpParagraphAlignment.ppAlignLeft;
@@ -77,7 +78,7 @@ namespace PowerPointAutomation.Slides
 
             // Add "Thank You" text with emphasis
             float footerTop = slide.Design.SlideMaster.Height - 150;
-            Shape thankYouShape = slide.Shapes.AddTextbox(
+            PowerPointShape thankYouShape = slide.Shapes.AddTextbox(
                 MsoTextOrientation.msoTextOrientationHorizontal,
                 slide.Design.SlideMaster.Width / 2 - 150,
                 footerTop,
@@ -92,7 +93,7 @@ namespace PowerPointAutomation.Slides
             thankYouShape.TextFrame.TextRange.ParagraphFormat.Alignment = PpParagraphAlignment.ppAlignCenter;
 
             // Add visual emphasis to the Thank You text
-            thankYouShape.Shadow.Type = MsoShadowType.msoShadowOffset;
+            thankYouShape.Shadow.Visible = MsoTriState.msoTrue;
             thankYouShape.Shadow.OffsetX = 3;
             thankYouShape.Shadow.OffsetY = 3;
             thankYouShape.Shadow.ForeColor.RGB = ColorTranslator.ToOle(Color.FromArgb(200, 200, 200));
@@ -101,7 +102,7 @@ namespace PowerPointAutomation.Slides
             // Add contact information if provided
             if (!string.IsNullOrEmpty(contactInfo))
             {
-                Shape contactShape = slide.Shapes.AddTextbox(
+                PowerPointShape contactShape = slide.Shapes.AddTextbox(
                     MsoTextOrientation.msoTextOrientationHorizontal,
                     slide.Design.SlideMaster.Width / 2 - 200,
                     footerTop + 50,
@@ -135,10 +136,10 @@ namespace PowerPointAutomation.Slides
         /// Adds decorative elements to enhance the title's visual appeal
         /// </summary>
         /// <param name="slide">The slide to modify</param>
-        private void AddDecorativeTitleElements(Slide slide)
+        private void AddDecorativeTitleElements(Microsoft.Office.Interop.PowerPoint.Slide slide)
         {
             // Add a subtle underline to the title
-            Shape titleUnderline = slide.Shapes.AddLine(
+            PowerPointShape titleUnderline = slide.Shapes.AddLine(
                 slide.Shapes.Title.Left,
                 slide.Shapes.Title.Top + slide.Shapes.Title.Height + 5,
                 slide.Shapes.Title.Left + slide.Shapes.Title.Width * 0.3f,
@@ -153,7 +154,7 @@ namespace PowerPointAutomation.Slides
             float iconLeft = slide.Shapes.Title.Left + slide.Shapes.Title.Width + 10;
             float iconTop = slide.Shapes.Title.Top + (slide.Shapes.Title.Height - iconSize) / 2;
 
-            Shape conclusionIcon = slide.Shapes.AddShape(
+            PowerPointShape conclusionIcon = slide.Shapes.AddShape(
                 MsoAutoShapeType.msoShapeRoundedRectangle,
                 iconLeft,
                 iconTop,
@@ -166,7 +167,7 @@ namespace PowerPointAutomation.Slides
             conclusionIcon.Line.Weight = 1.0f;
 
             // Add a checkmark inside the icon
-            Shape checkmark = slide.Shapes.AddTextbox(
+            PowerPointShape checkmark = slide.Shapes.AddTextbox(
                 MsoTextOrientation.msoTextOrientationHorizontal,
                 iconLeft,
                 iconTop,
@@ -188,7 +189,7 @@ namespace PowerPointAutomation.Slides
         /// </summary>
         /// <param name="slide">The slide to modify</param>
         /// <param name="conclusionText">The conclusion text to extract takeaways from</param>
-        private void AddKeyTakeaways(Slide slide, string conclusionText)
+        private void AddKeyTakeaways(Microsoft.Office.Interop.PowerPoint.Slide slide, string conclusionText)
         {
             // Only add the key takeaways if there's enough content in the conclusion text
             if (conclusionText.Length < 100)
@@ -200,7 +201,7 @@ namespace PowerPointAutomation.Slides
             float boxWidth = 300;
             float boxHeight = 150;
 
-            Shape takeawaysBox = slide.Shapes.AddShape(
+            PowerPointShape takeawaysBox = slide.Shapes.AddShape(
                 MsoAutoShapeType.msoShapeRoundedRectangle,
                 boxLeft,
                 boxTop,
@@ -213,7 +214,7 @@ namespace PowerPointAutomation.Slides
             takeawaysBox.Line.Weight = 1.5f;
 
             // Add header
-            Shape headerShape = slide.Shapes.AddTextbox(
+            PowerPointShape headerShape = slide.Shapes.AddTextbox(
                 MsoTextOrientation.msoTextOrientationHorizontal,
                 boxLeft + 10,
                 boxTop + 10,
@@ -228,7 +229,7 @@ namespace PowerPointAutomation.Slides
             headerShape.Line.Visible = MsoTriState.msoFalse;
 
             // Add simplified takeaways
-            Shape takeawaysContent = slide.Shapes.AddTextbox(
+            PowerPointShape takeawaysContent = slide.Shapes.AddTextbox(
                 MsoTextOrientation.msoTextOrientationHorizontal,
                 boxLeft + 15,
                 boxTop + 45,
@@ -254,7 +255,8 @@ namespace PowerPointAutomation.Slides
                     textRange.InsertAfter("\r");
 
                 TextRange bulletPoint = textRange.InsertAfter(bullets[i]);
-                bulletPoint.ParagraphFormat.Bullet.Type = MsoBulletType.msoBulletCircle;
+                bulletPoint.ParagraphFormat.FirstLineIndent = 5;
+                bulletPoint.ParagraphFormat.LeftIndent = 10;
                 bulletPoint.Font.Size = 14;
                 bulletPoint.Font.Color.RGB = ColorTranslator.ToOle(Color.FromArgb(89, 89, 89));
             }
@@ -267,9 +269,9 @@ namespace PowerPointAutomation.Slides
         /// </summary>
         /// <param name="slide">The slide to modify</param>
         /// <param name="yPosition">Y-coordinate position</param>
-        private void AddCallToAction(Slide slide, float yPosition)
+        private void AddCallToAction(Microsoft.Office.Interop.PowerPoint.Slide slide, float yPosition)
         {
-            Shape ctaShape = slide.Shapes.AddTextbox(
+            PowerPointShape ctaShape = slide.Shapes.AddTextbox(
                 MsoTextOrientation.msoTextOrientationHorizontal,
                 slide.Design.SlideMaster.Width / 2 - 150,
                 yPosition,
@@ -289,7 +291,7 @@ namespace PowerPointAutomation.Slides
         /// </summary>
         /// <param name="slide">The slide to animate</param>
         /// <param name="thankYouShape">The "Thank You" shape to emphasize</param>
-        private void AddSlideAnimations(Slide slide, Shape thankYouShape)
+        private void AddSlideAnimations(Microsoft.Office.Interop.PowerPoint.Slide slide, PowerPointShape thankYouShape)
         {
             // Animate the conclusion text first
             if (slide.Shapes.Count > 1)
@@ -297,8 +299,8 @@ namespace PowerPointAutomation.Slides
                 Effect contentEffect = slide.TimeLine.MainSequence.AddEffect(
                     slide.Shapes[2],
                     MsoAnimEffect.msoAnimEffectFade,
-                    MsoAnimateByLevel.msoAnimateLevelParagraph,
-                    MsoAnimTriggerType.msoAnimTriggerOnClick);
+                    MsoAnimateByLevel.msoAnimateLevelNone,
+                    MsoAnimTriggerType.msoAnimTriggerOnPageClick);
 
                 contentEffect.Timing.Duration = 0.7f;
             }
@@ -308,11 +310,10 @@ namespace PowerPointAutomation.Slides
             {
                 Effect takeawaysEffect = slide.TimeLine.MainSequence.AddEffect(
                     slide.Shapes[5],
-                    MsoAnimEffect.msoAnimEffectFly,
+                    MsoAnimEffect.msoAnimEffectFade,
                     MsoAnimateByLevel.msoAnimateLevelNone,
                     MsoAnimTriggerType.msoAnimTriggerAfterPrevious);
 
-                takeawaysEffect.EffectParameters.Direction = MsoAnimDirection.msoAnimDirectionFromLeft;
                 takeawaysEffect.Timing.Duration = 0.5f;
 
                 // Animate the content of the takeaways box
@@ -321,7 +322,7 @@ namespace PowerPointAutomation.Slides
                     Effect takeawaysContentEffect = slide.TimeLine.MainSequence.AddEffect(
                         slide.Shapes[7],
                         MsoAnimEffect.msoAnimEffectFade,
-                        MsoAnimateByLevel.msoAnimateLevelParagraph,
+                        MsoAnimateByLevel.msoAnimateLevelNone,
                         MsoAnimTriggerType.msoAnimTriggerAfterPrevious);
 
                     takeawaysContentEffect.Timing.Duration = 0.5f;
@@ -331,16 +332,16 @@ namespace PowerPointAutomation.Slides
             // Finally, animate the Thank You text with some emphasis
             Effect thankYouEffect = slide.TimeLine.MainSequence.AddEffect(
                 thankYouShape,
-                MsoAnimEffect.msoAnimEffectGrowAndTurn,
+                MsoAnimEffect.msoAnimEffectFade,
                 MsoAnimateByLevel.msoAnimateLevelNone,
                 MsoAnimTriggerType.msoAnimTriggerAfterPrevious);
 
             thankYouEffect.Timing.Duration = 0.8f;
 
-            // Add a subtle bounce emphasis animation
+            // Add a subtle emphasis animation
             Effect emphasisEffect = slide.TimeLine.MainSequence.AddEffect(
                 thankYouShape,
-                MsoAnimEffect.msoAnimEffectBounce,
+                MsoAnimEffect.msoAnimEffectFade,
                 MsoAnimateByLevel.msoAnimateLevelNone,
                 MsoAnimTriggerType.msoAnimTriggerAfterPrevious);
 

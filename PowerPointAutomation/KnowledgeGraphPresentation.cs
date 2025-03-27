@@ -1,11 +1,14 @@
 using System;
+using System.IO;
 using System.Drawing;
 using Microsoft.Office.Core;
+using PowerPointShape = Microsoft.Office.Interop.PowerPoint.Shape;
 using Microsoft.Office.Interop.PowerPoint;
-using System.Runtime.InteropServices;
 using PowerPointAutomation.Slides;
 using PowerPointAutomation.Models;
 using PowerPointAutomation.Utilities;
+using System.Runtime.InteropServices;
+using System.Collections.Generic;
 
 namespace PowerPointAutomation
 {
@@ -108,21 +111,21 @@ namespace PowerPointAutomation
         {
             Console.WriteLine("Applying custom theme...");
 
-            // Get the first slide master
-            SlideMaster master = presentation.SlideMasters[1];
+            // Get the first slide master using Office 2016+ syntax
+            Master master = presentation.Designs[1].SlideMaster;
 
             // Set background color
             master.Background.Fill.ForeColor.RGB = ColorTranslator.ToOle(Color.White);
 
-            // Set theme colors
-            master.Theme.ThemeColorScheme.Colors[1].RGB = ColorTranslator.ToOle(primaryColor);     // Text/Background dark
-            master.Theme.ThemeColorScheme.Colors[2].RGB = ColorTranslator.ToOle(Color.White);      // Text/Background light
-            master.Theme.ThemeColorScheme.Colors[3].RGB = ColorTranslator.ToOle(secondaryColor);   // Accent 1
-            master.Theme.ThemeColorScheme.Colors[4].RGB = ColorTranslator.ToOle(accentColor);      // Accent 2
-            master.Theme.ThemeColorScheme.Colors[5].RGB = ColorTranslator.ToOle(Color.FromArgb(146, 208, 80));  // Accent 3 - Green
-            master.Theme.ThemeColorScheme.Colors[6].RGB = ColorTranslator.ToOle(Color.FromArgb(0, 176, 240));   // Accent 4 - Light blue
+            // Set theme colors using proper method call syntax rather than indexer
+            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorText).RGB = ColorTranslator.ToOle(primaryColor);     // Text/Background dark
+            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorBackground).RGB = ColorTranslator.ToOle(Color.White);      // Text/Background light
+            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorAccent1).RGB = ColorTranslator.ToOle(secondaryColor);   // Accent 1
+            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorAccent2).RGB = ColorTranslator.ToOle(accentColor);      // Accent 2
+            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorAccent3).RGB = ColorTranslator.ToOle(Color.FromArgb(146, 208, 80));  // Accent 3 - Green
+            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorAccent4).RGB = ColorTranslator.ToOle(Color.FromArgb(0, 176, 240));   // Accent 4 - Light blue
 
-            // Set default font for the presentation
+            // Set default font for the presentation using the Name property directly
             master.Theme.ThemeFontScheme.MajorFont.Name = "Segoe UI";
             master.Theme.ThemeFontScheme.MinorFont.Name = "Segoe UI";
         }
@@ -134,10 +137,10 @@ namespace PowerPointAutomation
         {
             Console.WriteLine("Setting up slide layouts...");
 
-            // Get the first slide master
-            SlideMaster master = presentation.SlideMasters[1];
+            // Get the first slide master using Office 2016+ syntax
+            Master master = presentation.Designs[1].SlideMaster;
 
-            // Store default layouts for different slide types
+            // Store default layouts for different slide types using indexer syntax
             titleLayout = master.CustomLayouts[1];      // Title slide layout
             contentLayout = master.CustomLayouts[2];    // Title and content layout
             twoColumnLayout = master.CustomLayouts[3];  // Two content layout
@@ -205,11 +208,11 @@ namespace PowerPointAutomation
                 "Core Components of Knowledge Graphs",
                 new string[] {
                     "Nodes (Entities): Discrete objects, concepts, events, or states",
-                    "• Unique identifiers, categorized by type, contain properties",
+                    "ï¿½ Unique identifiers, categorized by type, contain properties",
                     "Edges (Relationships): Connect nodes and define how entities relate",
-                    "• Directed connections with semantic meaning, typed, may contain properties",
+                    "ï¿½ Directed connections with semantic meaning, typed, may contain properties",
                     "Labels and Properties: Provide additional context and attributes",
-                    "• Node labels denote entity types, edge labels specify relationship types"
+                    "ï¿½ Node labels denote entity types, edge labels specify relationship types"
                 },
                 "This slide outlines the three fundamental building blocks of knowledge graphs. " +
                 "The nested bullet points provide more detail about each component. The slide uses " +
@@ -253,19 +256,19 @@ namespace PowerPointAutomation
                 "Theoretical Foundations",
                 new string[] {
                     "Graph Theory",
-                    "• Connectivity, centrality, community structure",
-                    "• Path analysis, network algorithms",
+                    "ï¿½ Connectivity, centrality, community structure",
+                    "ï¿½ Path analysis, network algorithms",
                     "Semantic Networks",
-                    "• Conceptual associations, hierarchical organizations",
-                    "• Meaning representation"
+                    "ï¿½ Conceptual associations, hierarchical organizations",
+                    "ï¿½ Meaning representation"
                 },
                 new string[] {
                     "Ontological Modeling",
-                    "• Class hierarchies, property definitions",
-                    "• Axioms and rules, domain modeling",
+                    "ï¿½ Class hierarchies, property definitions",
+                    "ï¿½ Axioms and rules, domain modeling",
                     "Knowledge Representation",
-                    "• First-order logic, description logics",
-                    "• Frame systems, semantic triples"
+                    "ï¿½ First-order logic, description logics",
+                    "ï¿½ Frame systems, semantic triples"
                 },
                 "This slide presents the theoretical foundations that knowledge graphs build upon. " +
                 "The two-column layout helps organize related but distinct concepts. Each foundation " +
@@ -289,14 +292,14 @@ namespace PowerPointAutomation
                 "Implementation Technologies",
                 new string[] {
                     "Data Models",
-                    "• RDF (Resource Description Framework)",
-                    "• Property Graphs",
-                    "• Hypergraphs",
-                    "• Knowledge Graph Embeddings",
+                    "ï¿½ RDF (Resource Description Framework)",
+                    "ï¿½ Property Graphs",
+                    "ï¿½ Hypergraphs",
+                    "ï¿½ Knowledge Graph Embeddings",
                     "Storage Solutions",
-                    "• Native Graph Databases (Neo4j, TigerGraph)",
-                    "• RDF Triple Stores (AllegroGraph, Stardog)",
-                    "• Multi-Model Databases (ArangoDB, OrientDB)"
+                    "ï¿½ Native Graph Databases (Neo4j, TigerGraph)",
+                    "ï¿½ RDF Triple Stores (AllegroGraph, Stardog)",
+                    "ï¿½ Multi-Model Databases (ArangoDB, OrientDB)"
                 },
                 "This slide covers the various technologies used to implement knowledge graphs. " +
                 "It presents both data models and storage solutions. The hierarchical structure " +
@@ -306,7 +309,7 @@ namespace PowerPointAutomation
             );
 
             // Add code snippet for SPARQL query example
-            Shape codeBox = slide.Shapes.AddTextbox(
+            PowerPointShape codeBox = slide.Shapes.AddTextbox(
                 MsoTextOrientation.msoTextOrientationHorizontal,
                 slide.Design.SlideMaster.Width - 350, // Right side
                 slide.Design.SlideMaster.Height - 200, // Bottom area
@@ -354,23 +357,23 @@ namespace PowerPointAutomation
                 "Construction Approaches",
                 new string[] {
                     "Manual Curation",
-                    "• Expert-driven construction ensuring high quality",
-                    "• Time-intensive, difficult to scale",
-                    "• Critical domains requiring accuracy (healthcare, legal)",
+                    "ï¿½ Expert-driven construction ensuring high quality",
+                    "ï¿½ Time-intensive, difficult to scale",
+                    "ï¿½ Critical domains requiring accuracy (healthcare, legal)",
                     "Automated Extraction",
-                    "• Information extraction from text",
-                    "• Wrapper induction from web pages",
-                    "• Database transformation from relational data"
+                    "ï¿½ Information extraction from text",
+                    "ï¿½ Wrapper induction from web pages",
+                    "ï¿½ Database transformation from relational data"
                 },
                 new string[] {
                     "Hybrid Approaches",
-                    "• Bootstrap and refine: Automated with manual verification",
-                    "• Pattern-based expansion: Using patterns to extend examples",
-                    "• Distant supervision: Leveraging existing knowledge",
-                    "• Continuous feedback: Incorporating user corrections",
+                    "ï¿½ Bootstrap and refine: Automated with manual verification",
+                    "ï¿½ Pattern-based expansion: Using patterns to extend examples",
+                    "ï¿½ Distant supervision: Leveraging existing knowledge",
+                    "ï¿½ Continuous feedback: Incorporating user corrections",
                     "Evaluation Criteria",
-                    "• Accuracy, coverage, consistency",
-                    "• Semantic validity, alignment with domain knowledge"
+                    "ï¿½ Accuracy, coverage, consistency",
+                    "ï¿½ Semantic validity, alignment with domain knowledge"
                 },
                 "This slide presents different methodologies for constructing knowledge graphs. " +
                 "The two-column layout creates a natural comparison between approaches. The " +
@@ -413,15 +416,15 @@ namespace PowerPointAutomation
                 "Applications & Use Cases",
                 new string[] {
                     "Enterprise Knowledge Management",
-                    "• Corporate memory, expertise location, document management",
+                    "ï¿½ Corporate memory, expertise location, document management",
                     "Search and Recommendation Systems",
-                    "• Semantic search, context-aware recommendations, knowledge panels",
+                    "ï¿½ Semantic search, context-aware recommendations, knowledge panels",
                     "Research and Discovery",
-                    "• Scientific literature analysis, drug discovery, patent analysis",
+                    "ï¿½ Scientific literature analysis, drug discovery, patent analysis",
                     "Customer Intelligence",
-                    "• 360° customer view, journey mapping, nuanced segmentation",
+                    "ï¿½ 360ï¿½ customer view, journey mapping, nuanced segmentation",
                     "Compliance and Risk Management",
-                    "• Regulatory compliance, fraud detection, anti-money laundering"
+                    "ï¿½ Regulatory compliance, fraud detection, anti-money laundering"
                 },
                 "This slide showcases diverse applications of knowledge graphs across domains. " +
                 "The hierarchical structure organizes use cases by industry or function. The " +
@@ -430,9 +433,9 @@ namespace PowerPointAutomation
                 true // Enable animations
             );
 
-            // Add an SmartArt diagram to illustrate the use cases
+            // Add an SmartArt diagram to illustrate the use cases using numeric value
             var chart = slide.Shapes.AddSmartArt(
-                SmartArtLayout.ppSmartArtLayoutCircleRelationship,
+                (SmartArtLayout)1, // Use cycle layout by numeric value to avoid enum compatibility issues
                 slide.Design.SlideMaster.Width - 350, // Right side
                 240, // Y position
                 300, // Width
@@ -471,19 +474,19 @@ namespace PowerPointAutomation
                 "Advantages & Challenges",
                 new string[] {
                     "Key Advantages",
-                    "• Contextual Understanding: Data with semantic context",
-                    "• Flexibility: Adaptable to evolving information needs",
-                    "• Integration Capability: Unifies diverse data sources",
-                    "• Inferential Power: Discovers implicit knowledge",
-                    "• Human-Interpretable: Aligns with conceptual understanding"
+                    "ï¿½ Contextual Understanding: Data with semantic context",
+                    "ï¿½ Flexibility: Adaptable to evolving information needs",
+                    "ï¿½ Integration Capability: Unifies diverse data sources",
+                    "ï¿½ Inferential Power: Discovers implicit knowledge",
+                    "ï¿½ Human-Interpretable: Aligns with conceptual understanding"
                 },
                 new string[] {
                     "Implementation Challenges",
-                    "• Construction Complexity: Significant effort required",
-                    "• Schema Evolution: Maintaining consistency while growing",
-                    "• Performance at Scale: Optimizing for large graphs",
-                    "• Quality Assurance: Ensuring accuracy across assertions",
-                    "• User Adoption: Requiring new query paradigms"
+                    "ï¿½ Construction Complexity: Significant effort required",
+                    "ï¿½ Schema Evolution: Maintaining consistency while growing",
+                    "ï¿½ Performance at Scale: Optimizing for large graphs",
+                    "ï¿½ Quality Assurance: Ensuring accuracy across assertions",
+                    "ï¿½ User Adoption: Requiring new query paradigms"
                 },
                 "This slide presents a balanced view of both the advantages and challenges of " +
                 "knowledge graph implementations. The side-by-side comparison helps decision-makers " +
@@ -506,15 +509,15 @@ namespace PowerPointAutomation
                 "Future Directions",
                 new string[] {
                     "Self-Improving Knowledge Graphs",
-                    "• Automated knowledge acquisition and contradiction detection",
-                    "• Confidence scoring and active learning",
+                    "ï¿½ Automated knowledge acquisition and contradiction detection",
+                    "ï¿½ Confidence scoring and active learning",
                     "Multimodal Knowledge Graphs",
-                    "• Visual, temporal, spatial, and numerical integration",
-                    "• Cross-modal reasoning and representation",
+                    "ï¿½ Visual, temporal, spatial, and numerical integration",
+                    "ï¿½ Cross-modal reasoning and representation",
                     "Neuro-Symbolic Integration",
-                    "• Combining neural networks with symbolic logic",
-                    "• Using knowledge graphs to explain AI decisions",
-                    "• Foundation model integration with knowledge graphs"
+                    "ï¿½ Combining neural networks with symbolic logic",
+                    "ï¿½ Using knowledge graphs to explain AI decisions",
+                    "ï¿½ Foundation model integration with knowledge graphs"
                 },
                 "This slide explores emerging trends and future developments in knowledge graph " +
                 "technology. The hierarchical structure helps organize related concepts, while " +
@@ -555,25 +558,13 @@ namespace PowerPointAutomation
         {
             Console.WriteLine("Adding slide transitions...");
 
-            // Different transition effects for variety
-            PpTransitionType[] transitions = {
-                PpTransitionType.ppTransitionCut,
-                PpTransitionType.ppTransitionFade,
-                PpTransitionType.ppTransitionPush,
-                PpTransitionType.ppTransitionWipe,
-                PpTransitionType.ppTransitionSplit
-            };
-
-            // Apply transitions to all slides
+            // Apply a simple fade transition to all slides
             for (int i = 1; i <= presentation.Slides.Count; i++)
             {
                 Slide slide = presentation.Slides[i];
 
-                // Select a transition based on slide index
-                PpTransitionType transition = transitions[(i - 1) % transitions.Length];
-
-                // Apply the transition
-                slide.SlideShowTransition.EntryEffect = transition;
+                // Apply a fade transition
+                slide.SlideShowTransition.EntryEffect = PpEntryEffect.ppEffectFade; // Use the enum value instead of int
 
                 // Set transition speed
                 slide.SlideShowTransition.Speed = PpTransitionSpeed.ppTransitionSpeedMedium;

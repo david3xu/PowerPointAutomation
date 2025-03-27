@@ -1,6 +1,8 @@
 using System;
 using System.Drawing;
 using Microsoft.Office.Core;
+using PowerPointShape = Microsoft.Office.Interop.PowerPoint.Shape;
+using PowerPointShapeRange = Microsoft.Office.Interop.PowerPoint.ShapeRange;
 using Microsoft.Office.Interop.PowerPoint;
 using System.Runtime.InteropServices;
 
@@ -55,7 +57,7 @@ namespace PowerPointAutomation.Slides
             if (!string.IsNullOrEmpty(subtitle))
             {
                 float subtitleTop = slide.Shapes.Title.Top + slide.Shapes.Title.Height + 10;
-                Shape subtitleShape = slide.Shapes.AddTextbox(
+                PowerPointShape subtitleShape = slide.Shapes.AddTextbox(
                     MsoTextOrientation.msoTextOrientationHorizontal,
                     slide.Shapes.Title.Left,
                     subtitleTop,
@@ -79,7 +81,7 @@ namespace PowerPointAutomation.Slides
             float diagramWidth = slide.Design.SlideMaster.Width - 200;
             float diagramHeight = slide.Design.SlideMaster.Height - 250;
 
-            Shape diagramBackground = slide.Shapes.AddShape(
+            PowerPointShape diagramBackground = slide.Shapes.AddShape(
                 MsoAutoShapeType.msoShapeRectangle,
                 diagramLeft,
                 diagramTop,
@@ -93,7 +95,7 @@ namespace PowerPointAutomation.Slides
             diagramBackground.Line.Weight = 1.0f;
 
             // Create legend
-            Shape legendBox = slide.Shapes.AddShape(
+            PowerPointShape legendBox = slide.Shapes.AddShape(
                 MsoAutoShapeType.msoShapeRoundedRectangle,
                 diagramLeft + 20,
                 diagramTop + 20,
@@ -106,7 +108,7 @@ namespace PowerPointAutomation.Slides
             legendBox.Line.ForeColor.RGB = ColorTranslator.ToOle(Color.Gray);
             legendBox.Line.Weight = 1.0f;
 
-            Shape legendTitle = slide.Shapes.AddTextbox(
+            PowerPointShape legendTitle = slide.Shapes.AddTextbox(
                 MsoTextOrientation.msoTextOrientationHorizontal,
                 diagramLeft + 20,
                 diagramTop + 20,
@@ -131,10 +133,10 @@ namespace PowerPointAutomation.Slides
             float centerY = diagramTop + diagramHeight / 2;
             float radius = Math.Min(diagramWidth, diagramHeight) * 0.3f;
 
-            Shape companyNode = CreateEntityNode(slide, "Company", centerX, centerY - radius, nodeColor);
-            Shape personNode = CreateEntityNode(slide, "Person", centerX - radius, centerY, nodeColor);
-            Shape productNode = CreateEntityNode(slide, "Product", centerX + radius * 0.7f, centerY + radius * 0.7f, nodeColor);
-            Shape featureNode = CreateEntityNode(slide, "Feature", centerX + radius, centerY, nodeColor);
+            PowerPointShape companyNode = CreateEntityNode(slide, "Company", centerX, centerY - radius, nodeColor);
+            PowerPointShape personNode = CreateEntityNode(slide, "Person", centerX - radius, centerY, nodeColor);
+            PowerPointShape productNode = CreateEntityNode(slide, "Product", centerX + radius * 0.7f, centerY + radius * 0.7f, nodeColor);
+            PowerPointShape featureNode = CreateEntityNode(slide, "Feature", centerX + radius, centerY, nodeColor);
 
             // Add properties to company node
             AddPropertyBadge(slide, companyNode, "name: 'TechCorp'", -45, Color.FromArgb(112, 173, 71));
@@ -147,24 +149,24 @@ namespace PowerPointAutomation.Slides
             AddPropertyBadge(slide, productNode, "category: 'Software'", 0, Color.FromArgb(112, 173, 71));
 
             // Create edges (relationships) in the knowledge graph
-            Shape employeesEdge = CreateRelationship(slide, companyNode, personNode, "EMPLOYS");
-            Shape producesEdge = CreateRelationship(slide, companyNode, productNode, "PRODUCES");
-            Shape featuresEdge = CreateRelationship(slide, productNode, featureNode, "HAS_FEATURE");
-            Shape developsEdge = CreateRelationship(slide, personNode, productNode, "DEVELOPS");
+            PowerPointShape employeesEdge = CreateRelationship(slide, companyNode, personNode, "EMPLOYS");
+            PowerPointShape producesEdge = CreateRelationship(slide, companyNode, productNode, "PRODUCES");
+            PowerPointShape featuresEdge = CreateRelationship(slide, productNode, featureNode, "HAS_FEATURE");
+            PowerPointShape developsEdge = CreateRelationship(slide, personNode, productNode, "DEVELOPS");
 
             // Add animation if requested
             if (animate)
             {
                 // Group shapes for animation
-                Shape[] nodeShapes = new Shape[] { companyNode, personNode, productNode, featureNode };
-                Shape[] edgeShapes = new Shape[] { employeesEdge, producesEdge, featuresEdge, developsEdge };
+                PowerPointShape[] nodeShapes = new PowerPointShape[] { companyNode, personNode, productNode, featureNode };
+                PowerPointShape[] edgeShapes = new PowerPointShape[] { employeesEdge, producesEdge, featuresEdge, developsEdge };
 
                 // First animate the background and legend
                 Effect bgEffect = slide.TimeLine.MainSequence.AddEffect(
                     diagramBackground,
                     MsoAnimEffect.msoAnimEffectFade,
                     MsoAnimateByLevel.msoAnimateLevelNone,
-                    MsoAnimTriggerType.msoAnimTriggerOnClick);
+                    MsoAnimTriggerType.msoAnimTriggerOnPageClick);
 
                 Effect legendEffect = slide.TimeLine.MainSequence.AddEffect(
                     legendBox,
@@ -183,11 +185,10 @@ namespace PowerPointAutomation.Slides
                 {
                     Effect nodeEffect = slide.TimeLine.MainSequence.AddEffect(
                         nodeShapes[i],
-                        MsoAnimEffect.msoAnimEffectFly,
+                        MsoAnimEffect.msoAnimEffectFade,
                         MsoAnimateByLevel.msoAnimateLevelNone,
                         i == 0 ? MsoAnimTriggerType.msoAnimTriggerAfterPrevious : MsoAnimTriggerType.msoAnimTriggerAfterPrevious);
 
-                    nodeEffect.EffectParameters.Direction = GetNodeAnimationDirection(i);
                     nodeEffect.Timing.Duration = 0.5f;
                 }
 
@@ -235,7 +236,7 @@ namespace PowerPointAutomation.Slides
             if (!string.IsNullOrEmpty(subtitle))
             {
                 float subtitleTop = slide.Shapes.Title.Top + slide.Shapes.Title.Height + 10;
-                Shape subtitleShape = slide.Shapes.AddTextbox(
+                PowerPointShape subtitleShape = slide.Shapes.AddTextbox(
                     MsoTextOrientation.msoTextOrientationHorizontal,
                     slide.Shapes.Title.Left,
                     subtitleTop,
@@ -255,7 +256,7 @@ namespace PowerPointAutomation.Slides
             float radius = 180;
 
             // Create the main center circle for Knowledge Graphs
-            Shape kgCircle = slide.Shapes.AddShape(
+            PowerPointShape kgCircle = slide.Shapes.AddShape(
                 MsoAutoShapeType.msoShapeOval,
                 centerX - 80,
                 centerY - 80,
@@ -267,7 +268,7 @@ namespace PowerPointAutomation.Slides
             kgCircle.Line.ForeColor.RGB = ColorTranslator.ToOle(Color.FromArgb(31, 73, 125));
             kgCircle.Line.Weight = 2.0f;
 
-            Shape kgText = slide.Shapes.AddTextbox(
+            PowerPointShape kgText = slide.Shapes.AddTextbox(
                 MsoTextOrientation.msoTextOrientationHorizontal,
                 centerX - 70,
                 centerY - 25,
@@ -283,7 +284,7 @@ namespace PowerPointAutomation.Slides
             kgText.Line.Visible = MsoTriState.msoFalse;
 
             // Create ML circle
-            Shape mlCircle = slide.Shapes.AddShape(
+            PowerPointShape mlCircle = slide.Shapes.AddShape(
                 MsoAutoShapeType.msoShapeOval,
                 centerX - radius - 60,
                 centerY - 60,
@@ -295,7 +296,7 @@ namespace PowerPointAutomation.Slides
             mlCircle.Line.ForeColor.RGB = ColorTranslator.ToOle(Color.FromArgb(84, 130, 53));
             mlCircle.Line.Weight = 2.0f;
 
-            Shape mlText = slide.Shapes.AddTextbox(
+            PowerPointShape mlText = slide.Shapes.AddTextbox(
                 MsoTextOrientation.msoTextOrientationHorizontal,
                 centerX - radius - 50,
                 centerY - 20,
@@ -318,7 +319,7 @@ namespace PowerPointAutomation.Slides
                 "Graph Neural Networks"
             };
 
-            Shape[] integrationCircles = new Shape[integrationPoints.Length];
+            PowerPointShape[] integrationCircles = new PowerPointShape[integrationPoints.Length];
 
             for (int i = 0; i < integrationPoints.Length; i++)
             {
@@ -338,7 +339,7 @@ namespace PowerPointAutomation.Slides
                 integrationCircles[i].Line.ForeColor.RGB = ColorTranslator.ToOle(Color.FromArgb(191, 96, 27));
                 integrationCircles[i].Line.Weight = 1.5f;
 
-                Shape integrationText = slide.Shapes.AddTextbox(
+                PowerPointShape integrationText = slide.Shapes.AddTextbox(
                     MsoTextOrientation.msoTextOrientationHorizontal,
                     x - 45,
                     y - 25,
@@ -354,7 +355,7 @@ namespace PowerPointAutomation.Slides
                 integrationText.Line.Visible = MsoTriState.msoFalse;
 
                 // Create connector line from KG to integration point
-                Shape connector = slide.Shapes.AddConnector(
+                PowerPointShape connector = slide.Shapes.AddConnector(
                     MsoConnectorType.msoConnectorStraight,
                     centerX,
                     centerY,
@@ -368,7 +369,7 @@ namespace PowerPointAutomation.Slides
             }
 
             // Create bidirectional arrow between KG and ML
-            Shape kgToMlConnector = slide.Shapes.AddConnector(
+            PowerPointShape kgToMlConnector = slide.Shapes.AddConnector(
                 MsoConnectorType.msoConnectorStraight,
                 kgCircle.Left,
                 centerY,
@@ -382,7 +383,7 @@ namespace PowerPointAutomation.Slides
             kgToMlConnector.Line.EndArrowheadStyle = MsoArrowheadStyle.msoArrowheadTriangle;
 
             // Add labels for bidirectional arrows
-            Shape kgToMlLabel = slide.Shapes.AddTextbox(
+            PowerPointShape kgToMlLabel = slide.Shapes.AddTextbox(
                 MsoTextOrientation.msoTextOrientationHorizontal,
                 centerX - radius + 30,
                 centerY - 50,
@@ -395,7 +396,7 @@ namespace PowerPointAutomation.Slides
             kgToMlLabel.TextFrame.TextRange.Font.Color.RGB = ColorTranslator.ToOle(Color.FromArgb(89, 89, 89));
             kgToMlLabel.Line.Visible = MsoTriState.msoFalse;
 
-            Shape mlToKgLabel = slide.Shapes.AddTextbox(
+            PowerPointShape mlToKgLabel = slide.Shapes.AddTextbox(
                 MsoTextOrientation.msoTextOrientationHorizontal,
                 centerX - radius + 10,
                 centerY + 20,
@@ -409,7 +410,7 @@ namespace PowerPointAutomation.Slides
             mlToKgLabel.Line.Visible = MsoTriState.msoFalse;
 
             // Add explanatory text box
-            Shape explanation = slide.Shapes.AddTextbox(
+            PowerPointShape explanation = slide.Shapes.AddTextbox(
                 MsoTextOrientation.msoTextOrientationHorizontal,
                 slide.Design.SlideMaster.Width - 250,
                 slide.Design.SlideMaster.Height - 150,
@@ -450,14 +451,14 @@ namespace PowerPointAutomation.Slides
         private void AddLegendItem(Slide slide, float x, float y, Color color, string text)
         {
             // Create color box
-            Shape colorBox = slide.Shapes.AddShape(
+            PowerPointShape colorBox = slide.Shapes.AddShape(
                 MsoAutoShapeType.msoShapeRectangle,
                 x, y, 15, 15);
             colorBox.Fill.ForeColor.RGB = ColorTranslator.ToOle(color);
             colorBox.Line.ForeColor.RGB = ColorTranslator.ToOle(Color.Gray);
 
             // Create label
-            Shape label = slide.Shapes.AddTextbox(
+            PowerPointShape label = slide.Shapes.AddTextbox(
                 MsoTextOrientation.msoTextOrientationHorizontal,
                 x + 20, y - 2, 140, 20);
             label.TextFrame.TextRange.Text = text;
@@ -474,12 +475,12 @@ namespace PowerPointAutomation.Slides
         /// <param name="y">Y-coordinate (center)</param>
         /// <param name="color">Color for the node</param>
         /// <returns>The created shape</returns>
-        private Shape CreateEntityNode(Slide slide, string label, float x, float y, Color color)
+        private PowerPointShape CreateEntityNode(Slide slide, string label, float x, float y, Color color)
         {
             float size = 80;
 
             // Create entity node (circle)
-            Shape node = slide.Shapes.AddShape(
+            PowerPointShape node = slide.Shapes.AddShape(
                 MsoAutoShapeType.msoShapeOval,
                 x - size / 2, y - size / 2, size, size);
             node.Fill.ForeColor.RGB = ColorTranslator.ToOle(color);
@@ -511,7 +512,7 @@ namespace PowerPointAutomation.Slides
         /// <param name="propertyText">Text for the property</param>
         /// <param name="angle">Angle in degrees for positioning</param>
         /// <param name="color">Color for the property badge</param>
-        private void AddPropertyBadge(Slide slide, Shape nodeShape, string propertyText, float angle, Color color)
+        private void AddPropertyBadge(Slide slide, PowerPointShape nodeShape, string propertyText, float angle, Color color)
         {
             // Calculate position based on angle
             float nodeX = nodeShape.Left + nodeShape.Width / 2;
@@ -523,7 +524,7 @@ namespace PowerPointAutomation.Slides
             float propY = nodeY + (float)(radius * Math.Sin(radians));
 
             // Create property badge
-            Shape propShape = slide.Shapes.AddShape(
+            PowerPointShape propShape = slide.Shapes.AddShape(
                 MsoAutoShapeType.msoShapeRoundedRectangle,
                 propX - 60, propY - 15, 120, 30);
             propShape.Fill.ForeColor.RGB = ColorTranslator.ToOle(color);
@@ -538,12 +539,12 @@ namespace PowerPointAutomation.Slides
             propShape.TextFrame.VerticalAnchor = MsoVerticalAnchor.msoAnchorMiddle;
 
             // Create connector line from node to property
-            Shape connector = slide.Shapes.AddConnector(
+            PowerPointShape connector = slide.Shapes.AddConnector(
                 MsoConnectorType.msoConnectorStraight,
                 nodeX, nodeY, propX, propY);
             connector.Line.ForeColor.RGB = ColorTranslator.ToOle(Color.FromArgb(84, 130, 53));
             connector.Line.Weight = 1.0f;
-            connector.Line.DashStyle = MsoLineDashStyle.msoDashDot;
+            connector.Line.DashStyle = MsoLineDashStyle.msoLineDashDot;
         }
 
         /// <summary>
@@ -554,7 +555,7 @@ namespace PowerPointAutomation.Slides
         /// <param name="endNode">Ending node</param>
         /// <param name="label">Relationship label</param>
         /// <returns>The grouped shape containing the connector and label</returns>
-        private Shape CreateRelationship(Slide slide, Shape startNode, Shape endNode, string label)
+        private PowerPointShape CreateRelationship(Slide slide, PowerPointShape startNode, PowerPointShape endNode, string label)
         {
             // Calculate connector points (center of nodes)
             float startX = startNode.Left + startNode.Width / 2;
@@ -563,7 +564,7 @@ namespace PowerPointAutomation.Slides
             float endY = endNode.Top + endNode.Height / 2;
 
             // Create connector line
-            Shape connector = slide.Shapes.AddLine(startX, startY, endX, endY);
+            PowerPointShape connector = slide.Shapes.AddLine(startX, startY, endX, endY);
             connector.Line.ForeColor.RGB = ColorTranslator.ToOle(edgeColor);
             connector.Line.Weight = 2.0f;
 
@@ -577,7 +578,7 @@ namespace PowerPointAutomation.Slides
             float midY = (startY + endY) / 2;
 
             // Add relationship label background
-            Shape labelBg = slide.Shapes.AddShape(
+            PowerPointShape labelBg = slide.Shapes.AddShape(
                 MsoAutoShapeType.msoShapeRoundedRectangle,
                 midX - 45, midY - 12, 90, 24);
             labelBg.Fill.ForeColor.RGB = ColorTranslator.ToOle(Color.White);
@@ -586,7 +587,7 @@ namespace PowerPointAutomation.Slides
             labelBg.Line.Weight = 1.0f;
 
             // Add relationship label
-            Shape labelShape = slide.Shapes.AddTextbox(
+            PowerPointShape labelShape = slide.Shapes.AddTextbox(
                 MsoTextOrientation.msoTextOrientationHorizontal,
                 midX - 40, midY - 10, 80, 20);
             labelShape.TextFrame.TextRange.Text = label;
@@ -597,32 +598,20 @@ namespace PowerPointAutomation.Slides
             labelShape.Line.Visible = MsoTriState.msoFalse;
 
             // Group connector and label for animation purposes
-            ShapeRange shapeRange = slide.Shapes.Range(new int[] { connector.Id, labelBg.Id, labelShape.Id });
-            Shape groupedShape = shapeRange.Group();
+            PowerPointShapeRange shapeRange = slide.Shapes.Range(new int[] { connector.Id, labelBg.Id, labelShape.Id });
+            PowerPointShape groupedShape = shapeRange.Group();
 
             return groupedShape;
         }
 
         /// <summary>
-        /// Gets the animation direction for a node based on its index
+        /// Mapping a node index to an animation effect
         /// </summary>
         /// <param name="index">Index of the node</param>
-        /// <returns>Animation direction</returns>
-        private MsoAnimDirection GetNodeAnimationDirection(int index)
+        /// <returns>Animation effect for the node</returns>
+        private MsoAnimEffect GetNodeAnimationEffect(int index)
         {
-            switch (index % 4)
-            {
-                case 0:
-                    return MsoAnimDirection.msoAnimDirectionFromTop;
-                case 1:
-                    return MsoAnimDirection.msoAnimDirectionFromLeft;
-                case 2:
-                    return MsoAnimDirection.msoAnimDirectionFromRight;
-                case 3:
-                    return MsoAnimDirection.msoAnimDirectionFromBottom;
-                default:
-                    return MsoAnimDirection.msoAnimDirectionFromTop;
-            }
+            return MsoAnimEffect.msoAnimEffectFade;
         }
 
         /// <summary>
@@ -630,20 +619,20 @@ namespace PowerPointAutomation.Slides
         /// </summary>
         private void AnimateMLDiagram(
             Slide slide,
-            Shape kgCircle,
-            Shape kgText,
-            Shape mlCircle,
-            Shape mlText,
-            Shape[] integrationCircles,
-            Shape kgToMlConnector,
-            Shape explanation)
+            PowerPointShape kgCircle,
+            PowerPointShape kgText,
+            PowerPointShape mlCircle,
+            PowerPointShape mlText,
+            PowerPointShape[] integrationCircles,
+            PowerPointShape kgToMlConnector,
+            PowerPointShape explanation)
         {
             // First animate KG circle and text
             Effect kgCircleEffect = slide.TimeLine.MainSequence.AddEffect(
                 kgCircle,
-                MsoAnimEffect.msoAnimEffectGrowAndTurn,
+                MsoAnimEffect.msoAnimEffectFade,
                 MsoAnimateByLevel.msoAnimateLevelNone,
-                MsoAnimTriggerType.msoAnimTriggerOnClick);
+                MsoAnimTriggerType.msoAnimTriggerOnPageClick);
 
             Effect kgTextEffect = slide.TimeLine.MainSequence.AddEffect(
                 kgText,
@@ -654,7 +643,7 @@ namespace PowerPointAutomation.Slides
             // Then animate ML circle and text
             Effect mlCircleEffect = slide.TimeLine.MainSequence.AddEffect(
                 mlCircle,
-                MsoAnimEffect.msoAnimEffectGrowAndTurn,
+                MsoAnimEffect.msoAnimEffectFade,
                 MsoAnimateByLevel.msoAnimateLevelNone,
                 MsoAnimTriggerType.msoAnimTriggerAfterPrevious);
 
@@ -676,11 +665,9 @@ namespace PowerPointAutomation.Slides
             {
                 Effect circleEffect = slide.TimeLine.MainSequence.AddEffect(
                     integrationCircles[i],
-                    MsoAnimEffect.msoAnimEffectFly,
+                    MsoAnimEffect.msoAnimEffectFade,
                     MsoAnimateByLevel.msoAnimateLevelNone,
                     MsoAnimTriggerType.msoAnimTriggerAfterPrevious);
-
-                circleEffect.EffectParameters.Direction = GetNodeAnimationDirection(i);
             }
 
             // Finally, fade in the explanation

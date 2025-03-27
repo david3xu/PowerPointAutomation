@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using Microsoft.Office.Core;
+using PowerPointShape = Microsoft.Office.Interop.PowerPoint.Shape;
 using Microsoft.Office.Interop.PowerPoint;
 using System.Runtime.InteropServices;
 using PowerPointAutomation.Utilities;
@@ -51,7 +52,7 @@ namespace PowerPointAutomation.Slides
             slide.Shapes.Title.TextFrame.TextRange.Font.Color.RGB = ColorTranslator.ToOle(primaryColor);
 
             // Add a subtle underline to the title
-            Shape titleUnderline = slide.Shapes.AddLine(
+            PowerPointShape titleUnderline = slide.Shapes.AddLine(
                 slide.Shapes.Title.Left,
                 slide.Shapes.Title.Top + slide.Shapes.Title.Height + 5,
                 slide.Shapes.Title.Left + slide.Shapes.Title.Width * 0.4f,
@@ -62,7 +63,7 @@ namespace PowerPointAutomation.Slides
             titleUnderline.Line.Weight = 3.0f;
 
             // Access the content placeholder (typically index 2) and add bullet points
-            Shape contentShape = slide.Shapes[2];
+            PowerPointShape contentShape = slide.Shapes[2];
             TextRange textRange = contentShape.TextFrame.TextRange;
             textRange.Text = "";
 
@@ -75,7 +76,7 @@ namespace PowerPointAutomation.Slides
                 string bulletText = bulletPoints[i];
 
                 // Determine indentation level based on leading bullet character
-                if (bulletText.StartsWith("• "))
+                if (bulletText.StartsWith("â€¢ "))
                 {
                     currentIndentLevel = 1;
                     bulletText = bulletText.Substring(2); // Remove the bullet character
@@ -92,22 +93,22 @@ namespace PowerPointAutomation.Slides
                 // Add the bullet point text
                 TextRange newBullet = textRange.InsertAfter(bulletText);
 
-                // Format the bullet point based on indentation level
-                newBullet.ParagraphFormat.IndentLevel = currentIndentLevel + 1; // PowerPoint uses 1-based indentation
-
-                // Set bullet style
+                // Format bullet based on level (customize appearance without using IndentLevel)
                 if (currentIndentLevel == 0)
                 {
-                    // Main bullet
-                    newBullet.ParagraphFormat.Bullet.Type = MsoBulletType.msoBulletCircle;
+                    // Main bullet - use default bullet formatting
+                    newBullet.ParagraphFormat.Alignment = PpParagraphAlignment.ppAlignLeft;
                     newBullet.Font.Size = 24;
                     newBullet.Font.Bold = MsoTriState.msoTrue;
                     newBullet.Font.Color.RGB = ColorTranslator.ToOle(primaryColor);
                 }
                 else
                 {
-                    // Sub-bullet
-                    newBullet.ParagraphFormat.Bullet.Type = MsoBulletType.msoBulletDashMPa;
+                    // Sub-bullet - indent manually using compatible properties
+                    // Apply indentation for sub-bullets
+                    // Use FirstLineIndent and LeftIndent instead of First and Left
+                    newBullet.ParagraphFormat.FirstLineIndent = 10;
+                    newBullet.ParagraphFormat.LeftIndent = 10;
                     newBullet.Font.Size = 20;
                     newBullet.Font.Bold = MsoTriState.msoFalse;
                     newBullet.Font.Color.RGB = ColorTranslator.ToOle(secondaryColor);
@@ -120,12 +121,12 @@ namespace PowerPointAutomation.Slides
             // Add animations if requested
             if (animateBullets)
             {
-                // Animate the bullets to appear one by one
+                // Animate all bullets at once, since level-by-level animation might not be supported
                 Effect bulletEffect = slide.TimeLine.MainSequence.AddEffect(
                     contentShape,
                     MsoAnimEffect.msoAnimEffectFade,
-                    MsoAnimateByLevel.msoAnimateLevelParagraph,
-                    MsoAnimTriggerType.msoAnimTriggerOnClick);
+                    MsoAnimateByLevel.msoAnimateLevelNone,
+                    MsoAnimTriggerType.msoAnimTriggerOnPageClick);
 
                 // Set timing for bullet animations
                 bulletEffect.Timing.Duration = 0.5f;
@@ -166,7 +167,7 @@ namespace PowerPointAutomation.Slides
             slide.Shapes.Title.TextFrame.TextRange.Font.Color.RGB = ColorTranslator.ToOle(primaryColor);
 
             // Add a subtle underline to the title
-            Shape titleUnderline = slide.Shapes.AddLine(
+            PowerPointShape titleUnderline = slide.Shapes.AddLine(
                 slide.Shapes.Title.Left,
                 slide.Shapes.Title.Top + slide.Shapes.Title.Height + 5,
                 slide.Shapes.Title.Left + slide.Shapes.Title.Width * 0.4f,
@@ -179,7 +180,7 @@ namespace PowerPointAutomation.Slides
             // Left column (should be shape index 2 in two-column layout)
             if (slide.Shapes.Count > 1)
             {
-                Shape leftColumn = slide.Shapes[2];
+                PowerPointShape leftColumn = slide.Shapes[2];
                 FormatBulletPoints(leftColumn, leftColumnBullets, primaryColor);
 
                 // Add animation if requested
@@ -188,8 +189,8 @@ namespace PowerPointAutomation.Slides
                     Effect leftColumnEffect = slide.TimeLine.MainSequence.AddEffect(
                         leftColumn,
                         MsoAnimEffect.msoAnimEffectFade,
-                        MsoAnimateByLevel.msoAnimateLevelParagraph,
-                        MsoAnimTriggerType.msoAnimTriggerOnClick);
+                        MsoAnimateByLevel.msoAnimateLevelNone,
+                        MsoAnimTriggerType.msoAnimTriggerOnPageClick);
 
                     leftColumnEffect.Timing.Duration = 0.5f;
                 }
@@ -198,7 +199,7 @@ namespace PowerPointAutomation.Slides
             // Right column (should be shape index 3 in two-column layout)
             if (slide.Shapes.Count > 2)
             {
-                Shape rightColumn = slide.Shapes[3];
+                PowerPointShape rightColumn = slide.Shapes[3];
                 FormatBulletPoints(rightColumn, rightColumnBullets, secondaryColor);
 
                 // Add animation if requested
@@ -207,8 +208,8 @@ namespace PowerPointAutomation.Slides
                     Effect rightColumnEffect = slide.TimeLine.MainSequence.AddEffect(
                         rightColumn,
                         MsoAnimEffect.msoAnimEffectFade,
-                        MsoAnimateByLevel.msoAnimateLevelParagraph,
-                        MsoAnimTriggerType.msoAnimTriggerWithPrevious);
+                        MsoAnimateByLevel.msoAnimateLevelNone,
+                        MsoAnimTriggerType.msoAnimTriggerAfterPrevious);
 
                     rightColumnEffect.Timing.Duration = 0.5f;
                 }
@@ -219,7 +220,7 @@ namespace PowerPointAutomation.Slides
             float dividerY = 120;
             float dividerX = slide.Design.SlideMaster.Width / 2;
 
-            Shape divider = slide.Shapes.AddLine(
+            PowerPointShape divider = slide.Shapes.AddLine(
                 dividerX, dividerY,
                 dividerX, dividerY + dividerHeight - 100
             );
@@ -243,7 +244,7 @@ namespace PowerPointAutomation.Slides
         /// <param name="textShape">The text shape to format</param>
         /// <param name="bulletPoints">Array of bullet point text</param>
         /// <param name="mainColor">Color for main bullet points</param>
-        private void FormatBulletPoints(Shape textShape, string[] bulletPoints, Color mainColor)
+        private void FormatBulletPoints(PowerPointShape textShape, string[] bulletPoints, Color mainColor)
         {
             TextRange textRange = textShape.TextFrame.TextRange;
             textRange.Text = "";
@@ -257,7 +258,7 @@ namespace PowerPointAutomation.Slides
                 string bulletText = bulletPoints[i];
 
                 // Determine indentation level based on leading bullet character
-                if (bulletText.StartsWith("• "))
+                if (bulletText.StartsWith("â€¢ "))
                 {
                     currentIndentLevel = 1;
                     bulletText = bulletText.Substring(2); // Remove the bullet character
@@ -274,25 +275,25 @@ namespace PowerPointAutomation.Slides
                 // Add the bullet point text
                 TextRange newBullet = textRange.InsertAfter(bulletText);
 
-                // Format the bullet point based on indentation level
-                newBullet.ParagraphFormat.IndentLevel = currentIndentLevel + 1;
-
-                // Set bullet style based on indentation level
+                // Format bullet based on level (customize appearance without using IndentLevel)
                 if (currentIndentLevel == 0)
                 {
-                    // Main bullet
-                    newBullet.ParagraphFormat.Bullet.Type = MsoBulletType.msoBulletCircle;
+                    // Main bullet - use default bullet formatting
+                    newBullet.ParagraphFormat.Alignment = PpParagraphAlignment.ppAlignLeft;
                     newBullet.Font.Size = 24;
                     newBullet.Font.Bold = MsoTriState.msoTrue;
                     newBullet.Font.Color.RGB = ColorTranslator.ToOle(mainColor);
                 }
                 else
                 {
-                    // Sub-bullet
-                    newBullet.ParagraphFormat.Bullet.Type = MsoBulletType.msoBulletDashMPa;
+                    // Sub-bullet - indent manually using compatible properties
+                    // Apply indentation for sub-bullets
+                    // Use FirstLineIndent and LeftIndent instead of First and Left
+                    newBullet.ParagraphFormat.FirstLineIndent = 10;
+                    newBullet.ParagraphFormat.LeftIndent = 10;
                     newBullet.Font.Size = 20;
                     newBullet.Font.Bold = MsoTriState.msoFalse;
-                    newBullet.Font.Color.RGB = ColorTranslator.ToOle(Color.FromArgb(89, 89, 89)); // Dark gray
+                    newBullet.Font.Color.RGB = ColorTranslator.ToOle(secondaryColor);
                 }
 
                 // Add spacing between bullets

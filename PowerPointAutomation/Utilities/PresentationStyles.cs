@@ -1,7 +1,10 @@
 using System;
 using System.Drawing;
 using Microsoft.Office.Core;
+using PowerPointShape = Microsoft.Office.Interop.PowerPoint.Shape;
+using PowerPointShapeRange = Microsoft.Office.Interop.PowerPoint.ShapeRange;
 using Microsoft.Office.Interop.PowerPoint;
+using System.Runtime.InteropServices;
 
 namespace PowerPointAutomation.Utilities
 {
@@ -119,21 +122,21 @@ namespace PowerPointAutomation.Utilities
         /// <param name="presentation">The presentation to theme</param>
         public static void ApplyBlueTheme(Presentation presentation)
         {
-            // Get the first slide master
-            SlideMaster master = presentation.SlideMasters[1];
+            // Get the first slide master using indexing
+            Master master = presentation.Designs[1].SlideMaster;
 
             // Set background color
             master.Background.Fill.ForeColor.RGB = ColorTranslator.ToOle(Color.White);
 
-            // Set theme colors
-            master.Theme.ThemeColorScheme.Colors[1].RGB = ColorTranslator.ToOle(BlueTheme.Primary);     // Text/Background dark
-            master.Theme.ThemeColorScheme.Colors[2].RGB = ColorTranslator.ToOle(Color.White);          // Text/Background light
-            master.Theme.ThemeColorScheme.Colors[3].RGB = ColorTranslator.ToOle(BlueTheme.Secondary);   // Accent 1
-            master.Theme.ThemeColorScheme.Colors[4].RGB = ColorTranslator.ToOle(BlueTheme.Accent);      // Accent 2
-            master.Theme.ThemeColorScheme.Colors[5].RGB = ColorTranslator.ToOle(BlueTheme.Success);     // Accent 3
-            master.Theme.ThemeColorScheme.Colors[6].RGB = ColorTranslator.ToOle(Color.FromArgb(0, 176, 240)); // Accent 4
+            // Set theme colors using method calls instead of indexer
+            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorText).RGB = ColorTranslator.ToOle(BlueTheme.Primary);     // Text/Background dark
+            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorBackground).RGB = ColorTranslator.ToOle(Color.White);    // Text/Background light
+            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorAccent1).RGB = ColorTranslator.ToOle(BlueTheme.Secondary); // Accent 1
+            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorAccent2).RGB = ColorTranslator.ToOle(BlueTheme.Accent);   // Accent 2
+            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorAccent3).RGB = ColorTranslator.ToOle(BlueTheme.Success);  // Accent 3
+            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorAccent4).RGB = ColorTranslator.ToOle(Color.FromArgb(0, 176, 240)); // Accent 4
 
-            // Set default font for the presentation
+            // Set default font for the presentation using Name property
             master.Theme.ThemeFontScheme.MajorFont.Name = Fonts.Heading;
             master.Theme.ThemeFontScheme.MinorFont.Name = Fonts.Body;
         }
@@ -144,21 +147,21 @@ namespace PowerPointAutomation.Utilities
         /// <param name="presentation">The presentation to theme</param>
         public static void ApplyDarkTheme(Presentation presentation)
         {
-            // Get the first slide master
-            SlideMaster master = presentation.SlideMasters[1];
+            // Get the first slide master using indexing
+            Master master = presentation.Designs[1].SlideMaster;
 
             // Set background color
             master.Background.Fill.ForeColor.RGB = ColorTranslator.ToOle(DarkTheme.Primary);
 
-            // Set theme colors
-            master.Theme.ThemeColorScheme.Colors[1].RGB = ColorTranslator.ToOle(DarkTheme.TextBody);    // Text/Background dark
-            master.Theme.ThemeColorScheme.Colors[2].RGB = ColorTranslator.ToOle(DarkTheme.Primary);     // Text/Background light
-            master.Theme.ThemeColorScheme.Colors[3].RGB = ColorTranslator.ToOle(DarkTheme.Accent);      // Accent 1
-            master.Theme.ThemeColorScheme.Colors[4].RGB = ColorTranslator.ToOle(Color.FromArgb(255, 143, 0)); // Accent 2 - Orange
-            master.Theme.ThemeColorScheme.Colors[5].RGB = ColorTranslator.ToOle(DarkTheme.Success);     // Accent 3
-            master.Theme.ThemeColorScheme.Colors[6].RGB = ColorTranslator.ToOle(Color.FromArgb(232, 17, 35)); // Accent 4 - Red
+            // Set theme colors using method calls instead of indexer
+            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorText).RGB = ColorTranslator.ToOle(DarkTheme.TextBody);    // Text/Background dark
+            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorBackground).RGB = ColorTranslator.ToOle(DarkTheme.Primary); // Text/Background light
+            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorAccent1).RGB = ColorTranslator.ToOle(DarkTheme.Accent);   // Accent 1
+            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorAccent2).RGB = ColorTranslator.ToOle(Color.FromArgb(255, 143, 0)); // Accent 2 - Orange
+            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorAccent3).RGB = ColorTranslator.ToOle(DarkTheme.Success);  // Accent 3
+            master.Theme.ThemeColorScheme.Colors(MsoThemeColorSchemeIndex.msoThemeColorAccent4).RGB = ColorTranslator.ToOle(Color.FromArgb(232, 17, 35)); // Accent 4 - Red
 
-            // Set default font for the presentation
+            // Set default font for the presentation using Name property
             master.Theme.ThemeFontScheme.MajorFont.Name = Fonts.Heading;
             master.Theme.ThemeFontScheme.MinorFont.Name = Fonts.Body;
         }
@@ -168,19 +171,19 @@ namespace PowerPointAutomation.Utilities
         #region Shape Formatting
 
         /// <summary>
-        /// Formats a shape as a callout box with a title and description
+        /// Creates a professional looking callout box for important information
         /// </summary>
-        /// <param name="slide">The slide containing the shape</param>
+        /// <param name="slide">The slide to add the callout to</param>
         /// <param name="left">Left position</param>
         /// <param name="top">Top position</param>
-        /// <param name="width">Width of the box</param>
-        /// <param name="height">Height of the box</param>
+        /// <param name="width">Width of the callout</param>
+        /// <param name="height">Height of the callout</param>
         /// <param name="title">Title text</param>
         /// <param name="description">Description text</param>
-        /// <param name="fillColor">Background fill color</param>
-        /// <returns>The created shape</returns>
-        public static Shape CreateCalloutBox(
-            Slide slide,
+        /// <param name="fillColor">Background color</param>
+        /// <returns>The grouped callout shape</returns>
+        public static PowerPointShape CreateCalloutBox(
+            Microsoft.Office.Interop.PowerPoint.Slide slide,
             float left,
             float top,
             float width,
@@ -190,7 +193,7 @@ namespace PowerPointAutomation.Utilities
             Color fillColor)
         {
             // Create the main box
-            Shape box = slide.Shapes.AddShape(
+            PowerPointShape box = slide.Shapes.AddShape(
                 MsoAutoShapeType.msoShapeRoundedRectangle,
                 left, top, width, height);
 
@@ -203,7 +206,7 @@ namespace PowerPointAutomation.Utilities
             box.Line.Weight = 1.5f;
 
             // Add title
-            Shape titleShape = slide.Shapes.AddTextbox(
+            PowerPointShape titleShape = slide.Shapes.AddTextbox(
                 MsoTextOrientation.msoTextOrientationHorizontal,
                 left + 10, top + 10, width - 20, 25);
 
@@ -219,7 +222,7 @@ namespace PowerPointAutomation.Utilities
             titleShape.Line.Visible = MsoTriState.msoFalse;
 
             // Add description
-            Shape descriptionShape = slide.Shapes.AddTextbox(
+            PowerPointShape descriptionShape = slide.Shapes.AddTextbox(
                 MsoTextOrientation.msoTextOrientationHorizontal,
                 left + 10, top + 40, width - 20, height - 50);
 
@@ -229,7 +232,7 @@ namespace PowerPointAutomation.Utilities
             descriptionShape.Line.Visible = MsoTriState.msoFalse;
 
             // Group shapes
-            ShapeRange shapes = slide.Shapes.Range(new int[] {
+            PowerPointShapeRange shapes = slide.Shapes.Range(new int[] {
                 box.Id, titleShape.Id, descriptionShape.Id
             });
 
@@ -237,18 +240,18 @@ namespace PowerPointAutomation.Utilities
         }
 
         /// <summary>
-        /// Creates a code block with syntax highlighting
+        /// Creates a code block with syntax highlighting styling
         /// </summary>
         /// <param name="slide">The slide to add the code block to</param>
         /// <param name="left">Left position</param>
         /// <param name="top">Top position</param>
         /// <param name="width">Width of the code block</param>
         /// <param name="height">Height of the code block</param>
-        /// <param name="code">The code text</param>
-        /// <param name="language">Programming language (for title)</param>
-        /// <returns>The created shape</returns>
-        public static Shape CreateCodeBlock(
-            Slide slide,
+        /// <param name="code">The code to display</param>
+        /// <param name="language">The programming language (for display only)</param>
+        /// <returns>The grouped code block shape</returns>
+        public static PowerPointShape CreateCodeBlock(
+            Microsoft.Office.Interop.PowerPoint.Slide slide,
             float left,
             float top,
             float width,
@@ -257,7 +260,7 @@ namespace PowerPointAutomation.Utilities
             string language)
         {
             // Create background
-            Shape background = slide.Shapes.AddShape(
+            PowerPointShape background = slide.Shapes.AddShape(
                 MsoAutoShapeType.msoShapeRectangle,
                 left, top, width, height);
 
@@ -267,7 +270,7 @@ namespace PowerPointAutomation.Utilities
             background.Line.Weight = 1.0f;
 
             // Add title bar with language
-            Shape titleBar = slide.Shapes.AddShape(
+            PowerPointShape titleBar = slide.Shapes.AddShape(
                 MsoAutoShapeType.msoShapeRectangle,
                 left, top, width, 25);
 
@@ -275,7 +278,7 @@ namespace PowerPointAutomation.Utilities
             titleBar.Line.ForeColor.RGB = ColorTranslator.ToOle(Color.FromArgb(80, 84, 92));
 
             // Add language title
-            Shape titleText = slide.Shapes.AddTextbox(
+            PowerPointShape titleText = slide.Shapes.AddTextbox(
                 MsoTextOrientation.msoTextOrientationHorizontal,
                 left + 10, top, width - 20, 25);
 
@@ -286,7 +289,7 @@ namespace PowerPointAutomation.Utilities
             titleText.Line.Visible = MsoTriState.msoFalse;
 
             // Add code text
-            Shape codeText = slide.Shapes.AddTextbox(
+            PowerPointShape codeText = slide.Shapes.AddTextbox(
                 MsoTextOrientation.msoTextOrientationHorizontal,
                 left + 10, top + 30, width - 20, height - 35);
 
@@ -303,7 +306,7 @@ namespace PowerPointAutomation.Utilities
             // We would perform real syntax highlighting here with specific color formatting
             // but for simplicity, we'll just group the shapes
 
-            ShapeRange shapes = slide.Shapes.Range(new int[] {
+            PowerPointShapeRange shapes = slide.Shapes.Range(new int[] {
                 background.Id, titleBar.Id, titleText.Id, codeText.Id
             });
 
@@ -315,19 +318,19 @@ namespace PowerPointAutomation.Utilities
         #region Animation Presets
 
         /// <summary>
-        /// Applies a sequential fade-in animation to a collection of shapes
+        /// Applies sequential fade animation to a collection of shapes
         /// </summary>
         /// <param name="slide">The slide containing the shapes</param>
-        /// <param name="shapes">Array of shapes to animate</param>
+        /// <param name="shapes">The shapes to animate</param>
         /// <param name="clickToStart">Whether the animation should start on click</param>
-        public static void ApplySequentialFadeAnimation(Slide slide, Shape[] shapes, bool clickToStart = true)
+        public static void ApplySequentialFadeAnimation(Microsoft.Office.Interop.PowerPoint.Slide slide, PowerPointShape[] shapes, bool clickToStart = true)
         {
             if (shapes == null || shapes.Length == 0)
                 return;
 
             // First shape animation trigger
             MsoAnimTriggerType firstTrigger = clickToStart ?
-                MsoAnimTriggerType.msoAnimTriggerOnClick :
+                MsoAnimTriggerType.msoAnimTriggerOnPageClick :
                 MsoAnimTriggerType.msoAnimTriggerWithPrevious;
 
             // Add animation for the first shape
@@ -355,28 +358,28 @@ namespace PowerPointAutomation.Utilities
         }
 
         /// <summary>
-        /// Applies a "build" animation for bullet points in a text shape
+        /// Applies bullet point animation to a text shape
         /// </summary>
         /// <param name="slide">The slide containing the shape</param>
         /// <param name="textShape">The text shape with bullet points</param>
         /// <param name="clickToStart">Whether the animation should start on click</param>
-        /// <param name="delayBetweenItems">Delay between each bullet point (seconds)</param>
+        /// <param name="delayBetweenItems">Delay between bullet point animations</param>
         public static void ApplyBulletPointAnimation(
-            Slide slide,
-            Shape textShape,
+            Microsoft.Office.Interop.PowerPoint.Slide slide,
+            PowerPointShape textShape,
             bool clickToStart = true,
             float delayBetweenItems = 0.0f)
         {
             // First bullet animation trigger
             MsoAnimTriggerType trigger = clickToStart ?
-                MsoAnimTriggerType.msoAnimTriggerOnClick :
+                MsoAnimTriggerType.msoAnimTriggerOnPageClick :
                 MsoAnimTriggerType.msoAnimTriggerWithPrevious;
 
             // Add effect for bullet points
             Effect effect = slide.TimeLine.MainSequence.AddEffect(
                 textShape,
                 MsoAnimEffect.msoAnimEffectFade,
-                MsoAnimateByLevel.msoAnimateLevelParagraph,
+                MsoAnimateByLevel.msoAnimateLevelNone,
                 trigger);
 
             // Set timing
@@ -397,14 +400,14 @@ namespace PowerPointAutomation.Utilities
         /// <param name="effect">The animation effect to apply</param>
         /// <param name="clickToStart">Whether the animation should start on click</param>
         public static void ApplyEmphasisAnimation(
-            Slide slide,
-            Shape shape,
-            MsoAnimEffect effect = MsoAnimEffect.msoAnimEffectPulse,
+            Microsoft.Office.Interop.PowerPoint.Slide slide,
+            PowerPointShape shape,
+            MsoAnimEffect effect = MsoAnimEffect.msoAnimEffectGrowAndTurn,
             bool clickToStart = true)
         {
             // Animation trigger
             MsoAnimTriggerType trigger = clickToStart ?
-                MsoAnimTriggerType.msoAnimTriggerOnClick :
+                MsoAnimTriggerType.msoAnimTriggerOnPageClick :
                 MsoAnimTriggerType.msoAnimTriggerWithPrevious;
 
             // Add emphasis effect
@@ -416,10 +419,9 @@ namespace PowerPointAutomation.Utilities
 
             // Configure timing
             animEffect.Timing.Duration = 0.7f;
-
-            // Ensure the whole shape is animated
-            animEffect.EffectInformation.AnimateBackground = MsoTriState.msoTrue;
-            animEffect.EffectInformation.AnimateTextInReverse = MsoTriState.msoFalse;
+            
+            // Don't try to set read-only properties
+            // We'll use other means to control animation if needed
         }
 
         #endregion

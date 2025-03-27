@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using Microsoft.Office.Core;
+using PowerPointShape = Microsoft.Office.Interop.PowerPoint.Shape;
 using Microsoft.Office.Interop.PowerPoint;
 using System.Runtime.InteropServices;
 
@@ -39,7 +40,7 @@ namespace PowerPointAutomation.Slides
             Slide slide = presentation.Slides.AddSlide(presentation.Slides.Count + 1, layout);
 
             // Set title with custom formatting
-            Shape titleShape = slide.Shapes.Title;
+            PowerPointShape titleShape = slide.Shapes.Title;
             titleShape.TextFrame.TextRange.Text = title;
             titleShape.TextFrame.TextRange.Font.Size = 54;
             titleShape.TextFrame.TextRange.Font.Bold = MsoTriState.msoTrue;
@@ -52,7 +53,7 @@ namespace PowerPointAutomation.Slides
             // Set subtitle (Shape index 2 is typically the subtitle placeholder in title layouts)
             if (slide.Shapes.Count > 1 && !string.IsNullOrEmpty(subtitle))
             {
-                Shape subtitleShape = slide.Shapes[2];
+                PowerPointShape subtitleShape = slide.Shapes[2];
                 subtitleShape.TextFrame.TextRange.Text = subtitle;
                 subtitleShape.TextFrame.TextRange.Font.Size = 32;
                 subtitleShape.TextFrame.TextRange.Font.Italic = MsoTriState.msoTrue;
@@ -63,7 +64,7 @@ namespace PowerPointAutomation.Slides
             // Add a decorative horizontal line
             float lineWidth = 400;
             float lineTop = slide.Design.SlideMaster.Height * 0.6f;
-            Shape lineShape = slide.Shapes.AddLine(
+            PowerPointShape lineShape = slide.Shapes.AddLine(
                 slide.Design.SlideMaster.Width / 2 - lineWidth / 2, // Start X (centered)
                 lineTop, // Start Y
                 slide.Design.SlideMaster.Width / 2 + lineWidth / 2, // End X (centered)
@@ -80,7 +81,7 @@ namespace PowerPointAutomation.Slides
             {
                 // Find a position below the line
                 float presenterTop = lineTop + 30;
-                Shape presenterShape = slide.Shapes.AddTextbox(
+                PowerPointShape presenterShape = slide.Shapes.AddTextbox(
                     MsoTextOrientation.msoTextOrientationHorizontal,
                     slide.Design.SlideMaster.Width / 2 - 200, // Centered
                     presenterTop,
@@ -96,7 +97,7 @@ namespace PowerPointAutomation.Slides
 
             // Add date
             float dateTop = slide.Design.SlideMaster.Height - 80;
-            Shape dateShape = slide.Shapes.AddTextbox(
+            PowerPointShape dateShape = slide.Shapes.AddTextbox(
                 MsoTextOrientation.msoTextOrientationHorizontal,
                 slide.Design.SlideMaster.Width / 2 - 200, // Centered
                 dateTop,
@@ -115,7 +116,7 @@ namespace PowerPointAutomation.Slides
             float logoTop = slide.Design.SlideMaster.Height - logoSize - 40; // Bottom with margin
 
             // Create a simple "KG" logo using shapes
-            Shape logoBackground = slide.Shapes.AddShape(
+            PowerPointShape logoBackground = slide.Shapes.AddShape(
                 MsoAutoShapeType.msoShapeRoundedRectangle,
                 logoLeft,
                 logoTop,
@@ -129,7 +130,7 @@ namespace PowerPointAutomation.Slides
             logoBackground.Line.Weight = 2.0f;
 
             // Add "KG" text to logo
-            Shape logoText = slide.Shapes.AddTextbox(
+            PowerPointShape logoText = slide.Shapes.AddTextbox(
                 MsoTextOrientation.msoTextOrientationHorizontal,
                 logoLeft,
                 logoTop + logoSize / 2 - 20, // Centered vertically
@@ -160,24 +161,23 @@ namespace PowerPointAutomation.Slides
         /// </summary>
         private void AddEntryAnimations(
             Slide slide,
-            Shape titleShape,
+            PowerPointShape titleShape,
             string subtitle,
             string presenter,
-            Shape lineShape,
-            Shape dateShape,
-            Shape logoBackground,
-            Shape logoText)
+            PowerPointShape lineShape,
+            PowerPointShape dateShape,
+            PowerPointShape logoBackground,
+            PowerPointShape logoText)
         {
             // Create a sequence of animations
 
             // 1. Title flies in from top
             Effect titleEffect = slide.TimeLine.MainSequence.AddEffect(
                 titleShape,
-                MsoAnimEffect.msoAnimEffectFly,
+                MsoAnimEffect.msoAnimEffectFade,
                 MsoAnimateByLevel.msoAnimateLevelNone,
                 MsoAnimTriggerType.msoAnimTriggerOnPageClick);
 
-            titleEffect.EffectParameters.Direction = MsoAnimDirection.msoAnimDirectionFromTop;
             titleEffect.Timing.Duration = 1.0f;
 
             // 2. Subtitle fades in after title
@@ -195,11 +195,10 @@ namespace PowerPointAutomation.Slides
             // 3. Line wipes from left to right
             Effect lineEffect = slide.TimeLine.MainSequence.AddEffect(
                 lineShape,
-                MsoAnimEffect.msoAnimEffectWipe,
+                MsoAnimEffect.msoAnimEffectFade,
                 MsoAnimateByLevel.msoAnimateLevelNone,
                 MsoAnimTriggerType.msoAnimTriggerAfterPrevious);
 
-            lineEffect.EffectParameters.Direction = MsoAnimDirection.msoAnimDirectionFromLeft;
             lineEffect.Timing.Duration = 0.5f;
 
             // 4. Presenter name fades in after line (if provided)
@@ -231,7 +230,7 @@ namespace PowerPointAutomation.Slides
             // 6. Logo background and text zoom in together
             Effect logoBackgroundEffect = slide.TimeLine.MainSequence.AddEffect(
                 logoBackground,
-                MsoAnimEffect.msoAnimEffectGrowAndTurn,
+                MsoAnimEffect.msoAnimEffectFade,
                 MsoAnimateByLevel.msoAnimateLevelNone,
                 MsoAnimTriggerType.msoAnimTriggerAfterPrevious);
 
