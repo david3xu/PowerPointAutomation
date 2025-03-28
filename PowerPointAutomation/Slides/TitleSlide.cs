@@ -4,6 +4,7 @@ using Microsoft.Office.Core;
 using PowerPointShape = Microsoft.Office.Interop.PowerPoint.Shape;
 using Microsoft.Office.Interop.PowerPoint;
 using System.Runtime.InteropServices;
+using PowerPointAutomation.Utilities;
 
 namespace PowerPointAutomation.Slides
 {
@@ -39,12 +40,12 @@ namespace PowerPointAutomation.Slides
             // Add title slide
             Slide slide = presentation.Slides.AddSlide(presentation.Slides.Count + 1, layout);
 
-            // Set title with custom formatting
-            PowerPointShape titleShape = slide.Shapes.Title;
-            titleShape.TextFrame.TextRange.Text = title;
-            titleShape.TextFrame.TextRange.Font.Size = 54;
-            titleShape.TextFrame.TextRange.Font.Bold = MsoTriState.msoTrue;
-            titleShape.TextFrame.TextRange.Font.Color.RGB = ColorTranslator.ToOle(Color.FromArgb(31, 73, 125)); // Dark blue
+            // Use the safe method to get or create a title
+            PowerPointShape titleShape = OfficeCompatibility.GetOrCreateTitleShape(
+                slide, 
+                title, 
+                54, 
+                ColorTranslator.ToOle(Color.FromArgb(31, 73, 125))); // Dark blue
 
             // Center the title and add a subtle shadow effect
             titleShape.TextFrame.TextRange.ParagraphFormat.Alignment = PpParagraphAlignment.ppAlignCenter;

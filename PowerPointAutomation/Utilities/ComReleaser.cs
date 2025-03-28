@@ -17,6 +17,33 @@ namespace PowerPointAutomation.Utilities
         // Collection to track COM objects for batch release
         private static List<object> trackedObjects = new List<object>();
 
+        // Batch size threshold for automatic release
+        private const int AutoReleaseBatchSize = 100;
+        
+        // Track the creation time of objects for more efficient release
+        private static Dictionary<object, DateTime> objectCreationTimes = new Dictionary<object, DateTime>();
+        
+        // Flag to temporarily pause automatic COM object release
+        private static bool isPaused = false;
+
+        /// <summary>
+        /// Pauses automatic COM object release during critical operations
+        /// </summary>
+        public static void PauseRelease()
+        {
+            isPaused = true;
+            Console.WriteLine("COM object auto-release paused");
+        }
+
+        /// <summary>
+        /// Resumes automatic COM object release
+        /// </summary>
+        public static void ResumeRelease()
+        {
+            isPaused = false;
+            Console.WriteLine("COM object auto-release resumed");
+        }
+
         /// <summary>
         /// Safely releases a COM object and sets the reference to null
         /// </summary>
@@ -27,7 +54,9 @@ namespace PowerPointAutomation.Utilities
             {
                 try
                 {
-                    Marshal.ReleaseComObject(obj);
+                    int refCount = Marshal.ReleaseComObject(obj);
+                    // Uncomment for debugging
+                    // Console.WriteLine($"Released COM object. Remaining references: {refCount}");
                 }
                 catch (Exception ex)
                 {
@@ -41,6 +70,26 @@ namespace PowerPointAutomation.Utilities
         }
 
         /// <summary>
+        /// Alternative version that doesn't use ref parameter (to fix compiler errors)
+        /// </summary>
+        /// <typeparam name="T">Type of COM object to release</typeparam>
+        /// <param name="obj">The COM object to release</param>
+        public static void ReleaseCOMObject<T>(T obj) where T : class
+        {
+            if (obj != null)
+            {
+                try
+                {
+                    Marshal.ReleaseComObject(obj);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error releasing COM object: {ex.Message}");
+                }
+            }
+        }
+
+        /// <summary>
         /// Tracks a COM object for later batch release
         /// </summary>
         /// <param name="obj">COM object to track</param>
@@ -49,16 +98,38 @@ namespace PowerPointAutomation.Utilities
             if (obj != null)
             {
                 trackedObjects.Add(obj);
+                objectCreationTimes[obj] = DateTime.Now;
+                
+                // Auto-release if we've accumulated too many objects (but only if not paused)
+                if (!isPaused && trackedObjects.Count >= AutoReleaseBatchSize)
+                {
+                    Console.WriteLine($"Auto-releasing COM objects (count: {trackedObjects.Count})");
+                    ReleaseOldestObjects(AutoReleaseBatchSize / 2); // Release half of the tracked objects
+                }
             }
         }
 
         /// <summary>
-        /// Releases all tracked COM objects
+        /// Releases the oldest tracked COM objects up to the specified count
         /// </summary>
-        public static void ReleaseAllTrackedObjects()
+        /// <param name="count">Number of oldest objects to release</param>
+        public static void ReleaseOldestObjects(int count)
         {
-            foreach (object obj in trackedObjects)
+            // If release is paused or count is 0, don't release anything
+            if (isPaused || count <= 0)
             {
+                return;
+            }
+            
+            // Sort objects by creation time
+            var objectsByAge = new List<object>(trackedObjects);
+            objectsByAge.Sort((a, b) => objectCreationTimes[a].CompareTo(objectCreationTimes[b]));
+            
+            // Release the oldest objects
+            int releaseCount = Math.Min(count, objectsByAge.Count);
+            for (int i = 0; i < releaseCount; i++)
+            {
+                var obj = objectsByAge[i];
                 try
                 {
                     if (obj != null)
@@ -70,13 +141,113 @@ namespace PowerPointAutomation.Utilities
                 {
                     Console.WriteLine($"Error releasing tracked COM object: {ex.Message}");
                 }
+                finally
+                {
+                    trackedObjects.Remove(obj);
+                    objectCreationTimes.Remove(obj);
+                }
+            }
+            
+            // Force garbage collection after releasing objects
+            if (releaseCount > 0)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+        }
+
+        /// <summary>
+        /// Releases all tracked COM objects
+        /// </summary>
+        /// <param name="batchSize">Process objects in batches of this size</param>
+        public static void ReleaseAllTrackedObjects(int batchSize = 0)
+        {
+            Console.WriteLine($"Releasing all tracked COM objects (count: {trackedObjects.Count})");
+            
+            // If batch size is specified and valid, process in batches
+            if (batchSize > 0 && trackedObjects.Count > batchSize)
+            {
+                int totalBatches = (trackedObjects.Count + batchSize - 1) / batchSize;
+                Console.WriteLine($"Processing in {totalBatches} batches of {batchSize}");
+                
+                for (int batch = 0; batch < totalBatches; batch++)
+                {
+                    int batchStart = batch * batchSize;
+                    int batchEnd = Math.Min(batchStart + batchSize, trackedObjects.Count);
+                    int batchCount = batchEnd - batchStart;
+                    
+                    // Create a batch of objects to release
+                    List<object> batchObjects = new List<object>(batchCount);
+                    for (int i = batchStart; i < batchEnd; i++)
+                    {
+                        if (i < trackedObjects.Count)
+                        {
+                            batchObjects.Add(trackedObjects[i]);
+                        }
+                    }
+                    
+                    // Release objects in this batch
+                    foreach (object obj in batchObjects)
+                    {
+                        try
+                        {
+                            if (obj != null)
+                            {
+                                Marshal.ReleaseComObject(obj);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Error releasing tracked COM object in batch: {ex.Message}");
+                        }
+                        finally
+                        {
+                            trackedObjects.Remove(obj);
+                            objectCreationTimes.Remove(obj);
+                        }
+                    }
+                    
+                    // Force intermediate garbage collection between batches
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    
+                    Console.WriteLine($"Released batch {batch + 1}/{totalBatches} - {batchObjects.Count} objects");
+                }
+            }
+            else
+            {
+                // Process all objects at once (original behavior)
+                foreach (object obj in new List<object>(trackedObjects))
+                {
+                    try
+                    {
+                        if (obj != null)
+                        {
+                            Marshal.ReleaseComObject(obj);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error releasing tracked COM object: {ex.Message}");
+                    }
+                }
+                
+                // Clear collections
+            trackedObjects.Clear();
+                objectCreationTimes.Clear();
             }
 
-            // Clear the list after releasing all objects
-            trackedObjects.Clear();
-
-            // Force garbage collection
+            // Force final garbage collection
             FinalCleanup();
+        }
+
+        /// <summary>
+        /// Returns the number of currently tracked COM objects
+        /// </summary>
+        /// <returns>The count of tracked COM objects</returns>
+        public static int GetTrackedObjectCount()
+        {
+            return trackedObjects.Count;
         }
 
         /// <summary>
@@ -84,6 +255,8 @@ namespace PowerPointAutomation.Utilities
         /// </summary>
         public static void FinalCleanup()
         {
+            Console.WriteLine("Performing final cleanup with garbage collection");
+            
             // Run garbage collection twice to ensure all references are cleaned up
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -95,7 +268,8 @@ namespace PowerPointAutomation.Utilities
         /// Safely executes an action with COM objects and ensures cleanup
         /// </summary>
         /// <param name="action">The action to execute</param>
-        public static void SafeExecute(Action action)
+        /// <param name="batchSize">Size of batches for releasing objects</param>
+        public static void SafeExecute(Action action, int batchSize = 0)
         {
             try
             {
@@ -103,7 +277,7 @@ namespace PowerPointAutomation.Utilities
             }
             finally
             {
-                ReleaseAllTrackedObjects();
+                ReleaseAllTrackedObjects(batchSize);
                 FinalCleanup();
             }
         }
@@ -113,8 +287,9 @@ namespace PowerPointAutomation.Utilities
         /// </summary>
         /// <typeparam name="T">Return type of the function</typeparam>
         /// <param name="func">The function to execute</param>
+        /// <param name="batchSize">Size of batches for releasing objects</param>
         /// <returns>The result of the function</returns>
-        public static T SafeExecute<T>(Func<T> func)
+        public static T SafeExecute<T>(Func<T> func, int batchSize = 0)
         {
             try
             {
@@ -122,7 +297,7 @@ namespace PowerPointAutomation.Utilities
             }
             finally
             {
-                ReleaseAllTrackedObjects();
+                ReleaseAllTrackedObjects(batchSize);
                 FinalCleanup();
             }
         }

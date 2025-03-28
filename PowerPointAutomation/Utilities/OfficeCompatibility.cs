@@ -5,6 +5,7 @@ using Microsoft.Office.Core;
 using Microsoft.Office.Interop.PowerPoint;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
+using PowerPointShape = Microsoft.Office.Interop.PowerPoint.Shape;
 
 namespace PowerPointAutomation.Utilities
 {
@@ -272,6 +273,51 @@ namespace PowerPointAutomation.Utilities
                 Console.WriteLine($"Stack trace: {ex.StackTrace}");
                 throw; // Re-throw the exception
             }
+        }
+
+        /// <summary>
+        /// Safely gets the title shape from a slide or creates a custom title if it doesn't exist
+        /// </summary>
+        /// <param name="slide">The slide to get or create a title for</param>
+        /// <param name="title">The title text to set</param>
+        /// <param name="fontSize">The font size for the title</param>
+        /// <param name="primaryColor">The primary color for the title</param>
+        /// <returns>The title shape, either existing or newly created</returns>
+        public static PowerPointShape GetOrCreateTitleShape(Slide slide, string title, float fontSize, int primaryColorRgb)
+        {
+            PowerPointShape titleShape;
+            float titleLeft = 50;
+            float titleTop = 20;
+            float titleWidth = slide.Design.SlideMaster.Width - 100;
+            float titleHeight = 50;
+
+            try
+            {
+                // Try to use the existing title placeholder
+                titleShape = slide.Shapes.Title;
+                
+                // Get position properties for layout consistency if needed later
+                titleLeft = titleShape.Left;
+                titleTop = titleShape.Top;
+                titleWidth = titleShape.Width;
+                titleHeight = titleShape.Height;
+            }
+            catch
+            {
+                // Title placeholder doesn't exist, create a custom title
+                Console.WriteLine("Creating custom title shape for slide");
+                titleShape = slide.Shapes.AddTextbox(
+                    MsoTextOrientation.msoTextOrientationHorizontal,
+                    titleLeft, titleTop, titleWidth, titleHeight);
+            }
+
+            // Set standard title properties
+            titleShape.TextFrame.TextRange.Text = title;
+            titleShape.TextFrame.TextRange.Font.Size = fontSize;
+            titleShape.TextFrame.TextRange.Font.Bold = MsoTriState.msoTrue;
+            titleShape.TextFrame.TextRange.Font.Color.RGB = primaryColorRgb;
+            
+            return titleShape;
         }
     }
 } 

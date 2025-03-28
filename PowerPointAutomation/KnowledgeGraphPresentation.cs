@@ -17,6 +17,11 @@ namespace PowerPointAutomation
     /// </summary>
     public class KnowledgeGraphPresentation
     {
+        // Constants for PpSlideLayout values that might be missing in the current environment
+        private const PpSlideLayout ppLayoutTitleAndContent = (PpSlideLayout)8;
+        private const PpSlideLayout ppLayoutBlank = (PpSlideLayout)11;
+        private const PpSlideLayout ppLayoutTwoObjectsAndText = (PpSlideLayout)3;
+        
         // Interop objects that need to be tracked for cleanup
         private Application pptApp;
         private Presentation presentation;
@@ -34,54 +39,388 @@ namespace PowerPointAutomation
         private readonly Color accentColor = Color.FromArgb(237, 125, 49);    // Orange
         private readonly Color lightColor = Color.FromArgb(242, 242, 242);    // Light gray
 
+        // Slide generators
+        private TitleSlide titleSlideGenerator;
+        private IntroductionSlide introSlideGenerator;
+        private CoreFeatureSlide featureSlideGenerator;
+        private DiagramSlide diagramSlideGenerator;
+        private ListSlide listSlideGenerator;
+        private ComparisonSlide comparisonSlideGenerator;
+        private SummarySlide summarySlideGenerator;
+
+        // Output path for the presentation
+        private string outputPath;
+
         /// <summary>
-        /// Generates a complete knowledge graph presentation and saves it to the specified path
+        /// Gets or sets the path where the presentation will be saved
         /// </summary>
-        /// <param name="outputPath">The file path where the presentation will be saved</param>
-        public void Generate(string outputPath)
+        public string OutputPath
+        {
+            get { return outputPath; }
+            set { outputPath = value; }
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the KnowledgeGraphPresentation class
+        /// </summary>
+        public KnowledgeGraphPresentation()
+        {
+            // Get project directory path - go from bin\Debug to the solution root
+            string projectDir = AppDomain.CurrentDomain.BaseDirectory;
+            // Navigate up from bin/Debug to the project directory
+            for (int i = 0; i < 2; i++)
+            {
+                projectDir = Path.GetDirectoryName(projectDir);
+            }
+            
+            // Get solution directory (one level up from project)
+            string solutionDir = Path.GetDirectoryName(projectDir);
+            
+            // Initialize with default path if none provided
+            string outputDir = Path.Combine(solutionDir, "PowerPointAutomation", "docs", "output");
+            
+            // If the project directory structure doesn't exist, fall back to desktop
+            if (!Directory.Exists(outputDir))
+            {
+                outputPath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+                    "KnowledgeGraphPresentation.pptx");
+            }
+            else
+            {
+                outputPath = Path.Combine(outputDir, "KnowledgeGraphPresentation.pptx");
+            }
+        }
+
+        /// <summary>
+        /// Generates a complete knowledge graph presentation
+        /// </summary>
+        public void Generate()
         {
             try
             {
-                // Log Office version for diagnostic purposes
-                Console.WriteLine($"Detected Office version: {OfficeCompatibility.GetOfficeVersion()}");
-
-                // Initialize PowerPoint application with operation logging
-                OfficeCompatibility.LogOperation("Initialize PowerPoint", () => InitializePowerPoint());
-
-                // Apply custom theme
-                OfficeCompatibility.LogOperation("Apply Custom Theme", () => ApplyCustomTheme());
-
-                // Get slide layouts
-                OfficeCompatibility.LogOperation("Setup Slide Layouts", () => SetupSlideLayouts());
-
-                // Create slides with operation logging
-                OfficeCompatibility.LogOperation("Create Title Slide", () => CreateTitleSlide());
-                OfficeCompatibility.LogOperation("Create Introduction Slide", () => CreateIntroductionSlide());
-                OfficeCompatibility.LogOperation("Create Core Components Slide", () => CreateCoreComponentsSlide());
-                OfficeCompatibility.LogOperation("Create Structural Example Slide", () => CreateStructuralExampleSlide());
-                OfficeCompatibility.LogOperation("Create Theoretical Foundations Slide", () => CreateTheoreticalFoundationsSlide());
-                OfficeCompatibility.LogOperation("Create Implementation Technologies Slide", () => CreateImplementationTechnologiesSlide());
-                OfficeCompatibility.LogOperation("Create Construction Approaches Slide", () => CreateConstructionApproachesSlide());
-                OfficeCompatibility.LogOperation("Create Machine Learning Integration Slide", () => CreateMachineLearningIntegrationSlide());
-                OfficeCompatibility.LogOperation("Create Applications UseCases Slide", () => CreateApplicationsUseCasesSlide());
-                OfficeCompatibility.LogOperation("Create Advantages Challenges Slide", () => CreateAdvantagesChallengesSlide());
-                OfficeCompatibility.LogOperation("Create Future Directions Slide", () => CreateFutureDirectionsSlide());
-                OfficeCompatibility.LogOperation("Create Conclusion Slide", () => CreateConclusionSlide());
-
-                // Add transitions between slides
-                OfficeCompatibility.LogOperation("Add Slide Transitions", () => AddSlideTransitions());
-
-                // Add footer to all slides
-                OfficeCompatibility.LogOperation("Add Footer To All Slides", () => AddFooterToAllSlides());
+                Console.WriteLine("Creating Knowledge Graph presentation...");
+                
+                // Open PowerPoint and create a new presentation
+                pptApp = new Application();
+                ComReleaser.TrackObject(pptApp);
+                
+                presentation = pptApp.Presentations.Add(MsoTriState.msoTrue);
+                ComReleaser.TrackObject(presentation);
+                
+                // Force the presentation to be visible after creation for better troubleshooting
+                pptApp.Visible = MsoTriState.msoTrue;
+                
+                // Configure presentation properties
+                SetupPresentationProperties();
+                
+                Console.WriteLine("Setting up slide layouts...");
+                
+                // Declare layouts at this scope so they're available throughout the method  
+                CustomLayout titleLayout = null;
+                CustomLayout titleAndContentLayout = null;
+                CustomLayout blankLayout = null;
+                CustomLayout twoContentLayout = null;
+                
+                try 
+                {
+                    // Get the layout count to know what's available
+                    int layoutCount = presentation.SlideMaster.CustomLayouts.Count;
+                    Console.WriteLine($"Available layouts: {layoutCount}");
+                    
+                    // Find title layout (1-indexed)
+                    if (layoutCount >= 1)
+                    {
+                        titleLayout = presentation.SlideMaster.CustomLayouts[1];
+                        ComReleaser.TrackObject(titleLayout);
+                    }
+                    else
+                    {
+                        // Extremely unlikely case, but handle it
+                        Console.WriteLine("Warning: No layouts available! Creating a default presentation.");
+                        return; // Exit the method, can't continue without layouts
+                    }
+                    
+                    // Find title and content layout
+                    if (layoutCount >= 2) 
+                    {
+                        titleAndContentLayout = presentation.SlideMaster.CustomLayouts[2];
+                        ComReleaser.TrackObject(titleAndContentLayout);
+                    }
+                    else
+                    {
+                        Console.WriteLine("Warning: Could not find title and content layout, using title layout");
+                        titleAndContentLayout = titleLayout;
+                    }
+                    
+                    // Find blank layout - don't try to access index 11 directly
+                    if (layoutCount >= 3)
+                    {
+                        // Use layout 3 as a safer alternative to blank
+                        blankLayout = presentation.SlideMaster.CustomLayouts[3];
+                        ComReleaser.TrackObject(blankLayout);
+                    }
+                    else
+                    {
+                        Console.WriteLine("Warning: Could not find blank layout, using title layout");
+                        blankLayout = titleLayout;
+                    }
+                    
+                    // Find two content layout
+                    if (layoutCount >= 4)
+                    {
+                        twoContentLayout = presentation.SlideMaster.CustomLayouts[4];
+                        ComReleaser.TrackObject(twoContentLayout);
+                    }
+                    else
+                    {
+                        Console.WriteLine("Warning: Could not find two content layout, using title and content layout");
+                        twoContentLayout = titleAndContentLayout;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Warning: Error setting up layouts: {ex.Message}");
+                    Console.WriteLine("Falling back to default layouts");
+                    
+                    try {
+                        // Try to get at least one layout, preferably index 1
+                        titleLayout = presentation.SlideMaster.CustomLayouts[1];
+                        ComReleaser.TrackObject(titleLayout);
+                        
+                        // Use the same layout for all
+                        titleAndContentLayout = titleLayout;
+                        blankLayout = titleLayout;
+                        twoContentLayout = titleLayout;
+                    }
+                    catch {
+                        // If even that fails, we can't continue
+                        Console.WriteLine("Fatal error: Cannot create any layouts. Exiting presentation generation.");
+                        return;
+                    }
+                }
+                
+                // Release some initial objects
+                ComReleaser.ReleaseOldestObjects(10);
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                
+                // Create title slide
+                Console.WriteLine("Creating title slide...");
+                titleSlideGenerator = new TitleSlide(presentation, titleLayout);
+                Slide slide1 = titleSlideGenerator.Generate(
+                    "Knowledge Graphs",
+                    "Understanding the Foundation of Semantic Data",
+                    "Dr. Jane Smith",
+                    "AI Research Institute");
+                ComReleaser.TrackObject(slide1);
+                
+                // Aggressive cleanup after title slide creation
+                ComReleaser.ReleaseOldestObjects(50);
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                
+                // Create introduction slide
+                Console.WriteLine("Creating introduction slide...");
+                introSlideGenerator = new IntroductionSlide(presentation, titleAndContentLayout);
+                Slide slide2 = introSlideGenerator.Generate(
+                    "What is a Knowledge Graph?",
+                    "A knowledge graph is a network of entities, their semantic types, properties, and relationships. " +
+                    "It integrates data from multiple sources and enables machines to understand the semantics (meaning) " +
+                    "of data in a way that's closer to human understanding.\n\n" +
+                    "Knowledge graphs form the foundation of many modern AI systems, including search engines, " +
+                    "virtual assistants, recommendation systems, and data integration platforms.");
+                ComReleaser.TrackObject(slide2);
+                
+                // Aggressive cleanup after introduction slide creation
+                ComReleaser.ReleaseOldestObjects(50);
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                
+                // Create core components slide
+                Console.WriteLine("Creating core components slide...");
+                featureSlideGenerator = new CoreFeatureSlide(presentation, titleAndContentLayout);
+                Slide slide3 = featureSlideGenerator.Generate(
+                    "Core Components",
+                    new string[] {
+                        "Entities (Nodes): Real-world objects, concepts, or events represented in the graph",
+                        "Relationships (Edges): Connections between entities that describe how they relate to each other",
+                        "Properties: Attributes that describe entities or relationships",
+                        "Ontologies: Formal definitions of types, properties, and relationships",
+                        "Inference Rules: Logical rules that derive new facts from existing ones"
+                    });
+                ComReleaser.TrackObject(slide3);
+                
+                // Aggressive cleanup after core components slide creation
+                ComReleaser.ReleaseOldestObjects(50);
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                
+                // Create structural example slide
+                Console.WriteLine("Creating structural example slide...");
+                diagramSlideGenerator = new DiagramSlide(presentation, blankLayout);
+                Slide slide4 = diagramSlideGenerator.GenerateKnowledgeGraphDiagram(
+                    "Structural Example",
+                    "A simple knowledge graph showing entities and relationships");
+                ComReleaser.TrackObject(slide4);
+                
+                // Aggressive cleanup after diagram slide creation
+                ComReleaser.ReleaseOldestObjects(100);
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                
+                // Create applications slide
+                Console.WriteLine("Creating applications slide...");
+                listSlideGenerator = new ListSlide(presentation, titleAndContentLayout);
+                Slide slide5 = listSlideGenerator.GenerateBulletedList(
+                    "Applications of Knowledge Graphs",
+                    new string[] {
+                        "Semantic Search: Understanding the intent and contextual meaning behind queries",
+                        "Question Answering: Providing direct answers from structured knowledge",
+                        "Recommendation Systems: Suggesting products, content, or connections based on relationships",
+                        "Data Integration: Combining heterogeneous data sources with a unified semantic model",
+                        "Explainable AI: Adding interpretability to AI systems through knowledge representation"
+                    });
+                ComReleaser.TrackObject(slide5);
+                
+                // Aggressive cleanup after applications slide creation
+                ComReleaser.ReleaseOldestObjects(50);
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                
+                // Create future directions slide
+                Console.WriteLine("Creating future directions slide...");
+                comparisonSlideGenerator = new ComparisonSlide(presentation, twoContentLayout);
+                Slide slide6 = comparisonSlideGenerator.Generate(
+                    "Future Directions",
+                    new string[] {
+                        "Multimodal Knowledge Graphs",
+                        "Temporal Knowledge Representation",
+                        "Federated Knowledge Graphs",
+                        "Automated Knowledge Extraction",
+                        "Quantum Knowledge Representations"
+                    },
+                    new string[] {
+                        "Integration with Large Language Models",
+                        "Zero-shot Knowledge Transfer",
+                        "Neuro-symbolic AI Integration",
+                        "Edge Computing Applications",
+                        "Privacy-preserving Knowledge Sharing"
+                    });
+                ComReleaser.TrackObject(slide6);
+                
+                // Aggressive cleanup after future directions slide creation
+                ComReleaser.ReleaseOldestObjects(50);
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                
+                // Create conclusion slide
+                Console.WriteLine("Creating conclusion slide...");
+                summarySlideGenerator = new SummarySlide(presentation, titleAndContentLayout);
+                Slide slide7 = summarySlideGenerator.Generate(
+                    "Conclusion",
+                    "Knowledge graphs represent a powerful approach for structuring and reasoning with data. They enable:\n\n" +
+                    "• Semantic understanding of information\n" +
+                    "• Integration of heterogeneous data sources\n" +
+                    "• Inference of new knowledge\n" +
+                    "• More human-like AI capabilities\n\n" +
+                    "As AI continues to evolve, knowledge graphs will play an increasingly important role in creating systems that can reason with data in context.",
+                    "Contact: research@aigraphs.org");
+                ComReleaser.TrackObject(slide7);
+                
+                // Aggressive cleanup after conclusion slide creation
+                ComReleaser.ReleaseOldestObjects(50);
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                
+                // Add slide transitions for all slides
+                Console.WriteLine("Adding slide transitions...");
+                for (int i = 1; i <= presentation.Slides.Count; i++)
+                {
+                    try
+                    {
+                        Slide slide = presentation.Slides[i];
+                        slide.SlideShowTransition.EntryEffect = PpEntryEffect.ppEffectFade;
+                        slide.SlideShowTransition.Speed = PpTransitionSpeed.ppTransitionSpeedMedium;
+                        
+                        // Release after each transition to prevent memory buildup
+                        if (i % 2 == 0)
+                        {
+                            ComReleaser.ReleaseOldestObjects(10);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Warning: Could not set transition for slide {i}: {ex.Message}");
+                    }
+                }
+                
+                // Cleanup after transitions
+                ComReleaser.ReleaseOldestObjects(20);
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                
+                // Add footer with slide numbers to all slides except title
+                Console.WriteLine("Adding footers...");
+                for (int i = 2; i <= presentation.Slides.Count; i++)
+                {
+                    try
+                    {
+                        presentation.Slides[i].HeadersFooters.SlideNumber.Visible = MsoTriState.msoTrue;
+                        
+                        // Release after each footer to prevent memory buildup
+                        if (i % 3 == 0)
+                        {
+                            ComReleaser.ReleaseOldestObjects(10);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Warning: Could not set footer for slide {i}: {ex.Message}");
+                    }
+                }
+                
+                // Cleanup after footers
+                ComReleaser.ReleaseOldestObjects(20);
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
 
                 // Save the presentation
-                OfficeCompatibility.LogOperation("Save Presentation", () => presentation.SaveAs(outputPath));
-
-                Console.WriteLine("Presentation created successfully!");
+                Console.WriteLine($"Saving presentation to {this.outputPath}...");
+                
+                // Ensure the output directory exists
+                string outputDir = Path.GetDirectoryName(this.outputPath);
+                if (!Directory.Exists(outputDir))
+                {
+                    Directory.CreateDirectory(outputDir);
+                }
+                
+                presentation.SaveAs(this.outputPath);
+                Console.WriteLine("Presentation saved successfully.");
+                
+                // Display the presentation
+                try
+                {
+                    Console.WriteLine("Opening presentation for review...");
+                    System.Diagnostics.Process.Start(this.outputPath);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Warning: Could not open presentation for review: {ex.Message}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error generating knowledge graph presentation: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"Inner exception: {ex.InnerException.Message}");
+                }
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
             }
             finally
             {
-                // Always clean up COM objects
+                // Ensure all COM objects are cleaned up
                 CleanupComObjects();
             }
         }
@@ -151,534 +490,13 @@ namespace PowerPointAutomation
             conclusionLayout = master.CustomLayouts[2]; // Conclusion layout (reusing content layout)
         }
 
-        #region Slide Creation Methods
-
         /// <summary>
-        /// Creates the title slide
+        /// Sets up the presentation properties
         /// </summary>
-        private void CreateTitleSlide()
+        private void SetupPresentationProperties()
         {
-            Console.WriteLine("Creating title slide...");
-
-            var titleSlideGenerator = new TitleSlide(presentation, titleLayout);
-
-            titleSlideGenerator.Generate(
-                "Knowledge Graphs",
-                "A Comprehensive Introduction",
-                "Presented by PowerPoint Automation",
-                "The title slide introduces the presentation topic with a visually appealing layout. " +
-                "The main title uses a larger font with the primary color, while the subtitle uses a " +
-                "slightly smaller font with the secondary color. This establishes the visual hierarchy " +
-                "that will be consistent throughout the presentation."
-            );
-        }
-
-        /// <summary>
-        /// Creates the introduction slide explaining what knowledge graphs are
-        /// </summary>
-        private void CreateIntroductionSlide()
-        {
-            Console.WriteLine("Creating introduction slide...");
-
-            var contentSlideGenerator = new ContentSlide(presentation, contentLayout);
-
-            contentSlideGenerator.Generate(
-                "Introduction to Knowledge Graphs",
-                new string[] {
-                    "Knowledge graphs represent information as interconnected entities and relationships",
-                    "Semantic networks that represent real-world entities (objects, events, concepts)",
-                    "Bridge structured and unstructured data for human and machine interpretation",
-                    "Enable sophisticated reasoning, discovery, and analysis capabilities",
-                    "Create a flexible yet robust foundation for knowledge management"
-                },
-                "This slide introduces the fundamental concept of knowledge graphs as networks of " +
-                "entities and relationships. Emphasize how they differ from traditional data structures " +
-                "by explicitly modeling connections. The bullet points build progressively to highlight " +
-                "the key characteristics of knowledge graphs."
-            );
-        }
-
-        /// <summary>
-        /// Creates a slide explaining the core components of knowledge graphs
-        /// </summary>
-        private void CreateCoreComponentsSlide()
-        {
-            Console.WriteLine("Creating core components slide...");
-
-            var contentSlideGenerator = new ContentSlide(presentation, contentLayout);
-
-            contentSlideGenerator.Generate(
-                "Core Components of Knowledge Graphs",
-                new string[] {
-                    "Nodes (Entities): Discrete objects, concepts, events, or states",
-                    "� Unique identifiers, categorized by type, contain properties",
-                    "Edges (Relationships): Connect nodes and define how entities relate",
-                    "� Directed connections with semantic meaning, typed, may contain properties",
-                    "Labels and Properties: Provide additional context and attributes",
-                    "� Node labels denote entity types, edge labels specify relationship types"
-                },
-                "This slide outlines the three fundamental building blocks of knowledge graphs. " +
-                "The nested bullet points provide more detail about each component. The slide uses " +
-                "progressive disclosure through animation to avoid overwhelming the audience with " +
-                "too much information at once.",
-                true // Enable animations for bullet points
-            );
-        }
-
-        /// <summary>
-        /// Creates a slide with a visual example of a knowledge graph structure
-        /// </summary>
-        private void CreateStructuralExampleSlide()
-        {
-            Console.WriteLine("Creating structural example slide...");
-
-            var diagramSlideGenerator = new DiagramSlide(presentation, diagramLayout);
-
-            diagramSlideGenerator.GenerateKnowledgeGraphDiagram(
-                "Structural Example",
-                "A simple knowledge graph fragment representing company information",
-                "This slide presents a visual example of a knowledge graph structure. " +
-                "The diagram shows how entities are connected through relationships, " +
-                "with each having specific properties. The animation sequence reveals " +
-                "the components step by step to help the audience understand how the " +
-                "graph is constructed.",
-                true // Enable animations
-            );
-        }
-
-        /// <summary>
-        /// Creates a slide about the theoretical foundations of knowledge graphs
-        /// </summary>
-        private void CreateTheoreticalFoundationsSlide()
-        {
-            Console.WriteLine("Creating theoretical foundations slide...");
-
-            var contentSlideGenerator = new ContentSlide(presentation, twoColumnLayout);
-
-            contentSlideGenerator.GenerateTwoColumn(
-                "Theoretical Foundations",
-                new string[] {
-                    "Graph Theory",
-                    "� Connectivity, centrality, community structure",
-                    "� Path analysis, network algorithms",
-                    "Semantic Networks",
-                    "� Conceptual associations, hierarchical organizations",
-                    "� Meaning representation"
-                },
-                new string[] {
-                    "Ontological Modeling",
-                    "� Class hierarchies, property definitions",
-                    "� Axioms and rules, domain modeling",
-                    "Knowledge Representation",
-                    "� First-order logic, description logics",
-                    "� Frame systems, semantic triples"
-                },
-                "This slide presents the theoretical foundations that knowledge graphs build upon. " +
-                "The two-column layout helps organize related but distinct concepts. Each foundation " +
-                "includes sub-bullets that highlight key aspects. This structure helps the audience " +
-                "understand the multidisciplinary nature of knowledge graph technology.",
-                true // Enable animations
-            );
-        }
-
-        /// <summary>
-        /// Creates a slide about implementation technologies for knowledge graphs
-        /// </summary>
-        private void CreateImplementationTechnologiesSlide()
-        {
-            Console.WriteLine("Creating implementation technologies slide...");
-
-            var contentSlideGenerator = new ContentSlide(presentation, contentLayout);
-
-            // Create slides for implementation technologies
-            var slide = contentSlideGenerator.Generate(
-                "Implementation Technologies",
-                new string[] {
-                    "Data Models",
-                    "� RDF (Resource Description Framework)",
-                    "� Property Graphs",
-                    "� Hypergraphs",
-                    "� Knowledge Graph Embeddings",
-                    "Storage Solutions",
-                    "� Native Graph Databases (Neo4j, TigerGraph)",
-                    "� RDF Triple Stores (AllegroGraph, Stardog)",
-                    "� Multi-Model Databases (ArangoDB, OrientDB)"
-                },
-                "This slide covers the various technologies used to implement knowledge graphs. " +
-                "It presents both data models and storage solutions. The hierarchical structure " +
-                "helps organize related concepts, while the alternating colors help distinguish " +
-                "between main categories and specific examples.",
-                true // Enable animations
-            );
-
-            // Add code snippet for SPARQL query example
-            PowerPointShape codeBox = slide.Shapes.AddTextbox(
-                MsoTextOrientation.msoTextOrientationHorizontal,
-                slide.Design.SlideMaster.Width - 350, // Right side
-                slide.Design.SlideMaster.Height - 200, // Bottom area
-                300, // Width
-                150  // Height
-            );
-
-            // Format code box
-            codeBox.Fill.ForeColor.RGB = ColorTranslator.ToOle(Color.FromArgb(240, 240, 240));
-            codeBox.Line.ForeColor.RGB = ColorTranslator.ToOle(Color.DarkGray);
-            codeBox.Line.Weight = 1.0f;
-
-            // Add SPARQL query example
-            codeBox.TextFrame.TextRange.Text =
-                "Example SPARQL Query:\n\n" +
-                "SELECT ?person ?company\n" +
-                "WHERE {\n" +
-                "  ?company a :Company .\n" +
-                "  ?person a :Person .\n" +
-                "  ?company :employs ?person .\n" +
-                "  ?person :hasExpertise \"KG\" .\n" +
-                "}";
-
-            codeBox.TextFrame.TextRange.Font.Name = "Consolas";
-            codeBox.TextFrame.TextRange.Font.Size = 10;
-
-            // Animate the code box
-            var effect = slide.TimeLine.MainSequence.AddEffect(
-                codeBox,
-                MsoAnimEffect.msoAnimEffectFade,
-                MsoAnimateByLevel.msoAnimateLevelNone,
-                MsoAnimTriggerType.msoAnimTriggerAfterPrevious);
-        }
-
-        /// <summary>
-        /// Creates a slide about construction approaches for knowledge graphs
-        /// </summary>
-        private void CreateConstructionApproachesSlide()
-        {
-            Console.WriteLine("Creating construction approaches slide...");
-
-            var contentSlideGenerator = new ContentSlide(presentation, twoColumnLayout);
-
-            contentSlideGenerator.GenerateTwoColumn(
-                "Construction Approaches",
-                new string[] {
-                    "Manual Curation",
-                    "� Expert-driven construction ensuring high quality",
-                    "� Time-intensive, difficult to scale",
-                    "� Critical domains requiring accuracy (healthcare, legal)",
-                    "Automated Extraction",
-                    "� Information extraction from text",
-                    "� Wrapper induction from web pages",
-                    "� Database transformation from relational data"
-                },
-                new string[] {
-                    "Hybrid Approaches",
-                    "� Bootstrap and refine: Automated with manual verification",
-                    "� Pattern-based expansion: Using patterns to extend examples",
-                    "� Distant supervision: Leveraging existing knowledge",
-                    "� Continuous feedback: Incorporating user corrections",
-                    "Evaluation Criteria",
-                    "� Accuracy, coverage, consistency",
-                    "� Semantic validity, alignment with domain knowledge"
-                },
-                "This slide presents different methodologies for constructing knowledge graphs. " +
-                "The two-column layout creates a natural comparison between approaches. The " +
-                "progressive disclosure through animation helps maintain focus on one approach " +
-                "at a time before revealing the next one.",
-                true // Enable animations
-            );
-        }
-
-        /// <summary>
-        /// Creates a slide about machine learning integration with knowledge graphs
-        /// </summary>
-        private void CreateMachineLearningIntegrationSlide()
-        {
-            Console.WriteLine("Creating machine learning integration slide...");
-
-            var diagramSlideGenerator = new DiagramSlide(presentation, diagramLayout);
-
-            diagramSlideGenerator.GenerateMLIntegrationDiagram(
-                "Machine Learning Integration",
-                "How knowledge graphs and machine learning interact",
-                "This slide visualizes the bidirectional relationship between knowledge graphs " +
-                "and machine learning. The circular diagram shows how machine learning can help " +
-                "build and enhance knowledge graphs, while knowledge graphs can improve machine " +
-                "learning models through structured knowledge. The animation sequence reveals " +
-                "these relationships step by step."
-            );
-        }
-
-        /// <summary>
-        /// Creates a slide about real-world applications and use cases
-        /// </summary>
-        private void CreateApplicationsUseCasesSlide()
-        {
-            Console.WriteLine("Creating applications and use cases slide...");
-
-            // Add slide with title layout
-            Slide slide = presentation.Slides.AddSlide(presentation.Slides.Count + 1, contentLayout);
-
-            // Set slide title
-            slide.Shapes.Title.TextFrame.TextRange.Text = "Applications & Use Cases";
-            slide.Shapes.Title.TextFrame.TextRange.Font.Size = 36;
-            slide.Shapes.Title.TextFrame.TextRange.Font.Bold = MsoTriState.msoTrue;
-            slide.Shapes.Title.TextFrame.TextRange.Font.Color.RGB = ColorTranslator.ToOle(primaryColor);
-
-            // Add title underline
-            PowerPointShape titleUnderline = slide.Shapes.AddLine(
-                slide.Shapes.Title.Left,
-                slide.Shapes.Title.Top + slide.Shapes.Title.Height + 5,
-                slide.Shapes.Title.Left + slide.Shapes.Title.Width * 0.4f,
-                slide.Shapes.Title.Top + slide.Shapes.Title.Height + 5
-            );
-            titleUnderline.Line.ForeColor.RGB = ColorTranslator.ToOle(accentColor);
-            titleUnderline.Line.Weight = 3.0f;
-
-            // Add introduction text
-            PowerPointShape introTextBox = slide.Shapes.AddTextbox(
-                MsoTextOrientation.msoTextOrientationHorizontal,
-                50, 100, 640, 80
-            );
-            introTextBox.TextFrame.TextRange.Text = "Knowledge graphs power a wide range of applications across industries:";
-            introTextBox.TextFrame.TextRange.Font.Size = 20;
-            introTextBox.TextFrame.TextRange.Font.Color.RGB = ColorTranslator.ToOle(secondaryColor);
-
-            // Calculate SmartArt position
-            float smartArtLeft = 50;
-            float smartArtTop = 180;
-            float smartArtWidth = 640;
-            float smartArtHeight = 300;
-
-            // Get SmartArt layout using compatibility layer
-            object smartArtLayout = OfficeCompatibility.GetSmartArtLayout(slide.Application, 1); // Cycle layout
-
-            // Add SmartArt if layout is available
-            if (smartArtLayout != null)
-            {
-                // Add SmartArt diagram using compatibility-safe approach
-                // Use dynamic to avoid type conversion errors
-                dynamic dynamicLayout = smartArtLayout;
-                var chart = slide.Shapes.AddSmartArt(
-                    dynamicLayout, 
-                    smartArtLeft, smartArtTop, smartArtWidth, smartArtHeight);
-
-                // Get the SmartArt nodes and customize them
-                if (chart.SmartArt != null)
-                {
-                    try
-                    {
-                        chart.SmartArt.AllNodes[0].TextFrame2.TextRange.Text = "Knowledge Graphs";
-                        chart.SmartArt.AllNodes[1].TextFrame2.TextRange.Text = "Enterprise";
-                        chart.SmartArt.AllNodes[2].TextFrame2.TextRange.Text = "Search";
-                        chart.SmartArt.AllNodes[3].TextFrame2.TextRange.Text = "Research";
-                        chart.SmartArt.AllNodes[4].TextFrame2.TextRange.Text = "Customer";
-                        chart.SmartArt.AllNodes[5].TextFrame2.TextRange.Text = "Compliance";
-
-                        // Add animation to the SmartArt
-                        slide.TimeLine.MainSequence.AddEffect(
-                            chart,
-                            MsoAnimEffect.msoAnimEffectFade,
-                            MsoAnimateByLevel.msoAnimateLevelNone,
-                            MsoAnimTriggerType.msoAnimTriggerWithPrevious);
-                    }
-                    catch (Exception ex)
-                    {
-                        // Log SmartArt text setting error for debugging
-                        Console.WriteLine($"Error setting SmartArt text: {ex.Message}");
-                    }
-                }
-            }
-            else
-            {
-                // Fallback: Create a simple shape layout instead of SmartArt
-                PowerPointShape fallbackShape = slide.Shapes.AddShape(
-                    MsoAutoShapeType.msoShapeRoundedRectangle,
-                    smartArtLeft + smartArtWidth/3, smartArtTop, smartArtWidth/3, 60);
-                
-                fallbackShape.TextFrame.TextRange.Text = "Knowledge Graphs";
-                fallbackShape.TextFrame.TextRange.Font.Size = 24;
-                fallbackShape.TextFrame.TextRange.Font.Bold = MsoTriState.msoTrue;
-                fallbackShape.TextFrame.TextRange.Font.Color.RGB = ColorTranslator.ToOle(Color.White);
-                fallbackShape.Fill.ForeColor.RGB = ColorTranslator.ToOle(primaryColor);
-                
-                // Create circle shapes for use cases around the center box
-                CreateUseCase(slide, "Enterprise", smartArtLeft + 60, smartArtTop + 100);
-                CreateUseCase(slide, "Search", smartArtLeft + smartArtWidth - 150, smartArtTop + 100);
-                CreateUseCase(slide, "Research", smartArtLeft + 60, smartArtTop + 200);
-                CreateUseCase(slide, "Customer", smartArtLeft + smartArtWidth - 150, smartArtTop + 200);
-                CreateUseCase(slide, "Compliance", smartArtLeft + smartArtWidth/2 - 45, smartArtTop + 250);
-            }
-
-            // Add speaker notes
-            slide.NotesPage.Shapes[2].TextFrame.TextRange.Text =
-                "This slide highlights how knowledge graphs are applied across different domains. " +
-                "The diagram shows various industries and applications. In enterprise settings, " +
-                "knowledge graphs connect disparate data sources. For search, they enhance relevance " +
-                "and context. Research applications leverage connections to find new insights. " +
-                "Customer applications include recommendation engines and personalization. " +
-                "Compliance applications use knowledge graphs for risk assessment and audit trails.";
-        }
-        
-        /// <summary>
-        /// Helper method to create a use case bubble (for SmartArt fallback)
-        /// </summary>
-        private void CreateUseCase(Slide slide, string text, float left, float top)
-        {
-            PowerPointShape circle = slide.Shapes.AddShape(
-                MsoAutoShapeType.msoShapeOval,
-                left, top, 90, 90);
-                
-            circle.TextFrame.TextRange.Text = text;
-            circle.TextFrame.TextRange.Font.Size = 18;
-            circle.TextFrame.TextRange.Font.Bold = MsoTriState.msoTrue;
-            circle.TextFrame.TextRange.Font.Color.RGB = ColorTranslator.ToOle(Color.White);
-            circle.Fill.ForeColor.RGB = ColorTranslator.ToOle(secondaryColor);
-            
-            // Add connector line to main shape
-            PowerPointShape connector = slide.Shapes.AddLine(
-                left + 45, top, 
-                left + 45, top - 20);
-            connector.Line.ForeColor.RGB = ColorTranslator.ToOle(accentColor);
-            connector.Line.Weight = 2.0f;
-        }
-
-        /// <summary>
-        /// Creates a slide about advantages and challenges of knowledge graphs
-        /// </summary>
-        private void CreateAdvantagesChallengesSlide()
-        {
-            Console.WriteLine("Creating advantages and challenges slide...");
-
-            var contentSlideGenerator = new ContentSlide(presentation, twoColumnLayout);
-
-            contentSlideGenerator.GenerateTwoColumn(
-                "Advantages & Challenges",
-                new string[] {
-                    "Key Advantages",
-                    "� Contextual Understanding: Data with semantic context",
-                    "� Flexibility: Adaptable to evolving information needs",
-                    "� Integration Capability: Unifies diverse data sources",
-                    "� Inferential Power: Discovers implicit knowledge",
-                    "� Human-Interpretable: Aligns with conceptual understanding"
-                },
-                new string[] {
-                    "Implementation Challenges",
-                    "� Construction Complexity: Significant effort required",
-                    "� Schema Evolution: Maintaining consistency while growing",
-                    "� Performance at Scale: Optimizing for large graphs",
-                    "� Quality Assurance: Ensuring accuracy across assertions",
-                    "� User Adoption: Requiring new query paradigms"
-                },
-                "This slide presents a balanced view of both the advantages and challenges of " +
-                "knowledge graph implementations. The side-by-side comparison helps decision-makers " +
-                "understand both the benefits and potential obstacles. The contrasting colors " +
-                "visually distinguish between advantages and challenges.",
-                true // Enable animations
-            );
-        }
-
-        /// <summary>
-        /// Creates a slide about future directions in knowledge graph technology
-        /// </summary>
-        private void CreateFutureDirectionsSlide()
-        {
-            Console.WriteLine("Creating future directions slide...");
-
-            var contentSlideGenerator = new ContentSlide(presentation, contentLayout);
-
-            contentSlideGenerator.Generate(
-                "Future Directions",
-                new string[] {
-                    "Self-Improving Knowledge Graphs",
-                    "� Automated knowledge acquisition and contradiction detection",
-                    "� Confidence scoring and active learning",
-                    "Multimodal Knowledge Graphs",
-                    "� Visual, temporal, spatial, and numerical integration",
-                    "� Cross-modal reasoning and representation",
-                    "Neuro-Symbolic Integration",
-                    "� Combining neural networks with symbolic logic",
-                    "� Using knowledge graphs to explain AI decisions",
-                    "� Foundation model integration with knowledge graphs"
-                },
-                "This slide explores emerging trends and future developments in knowledge graph " +
-                "technology. The hierarchical structure helps organize related concepts, while " +
-                "the animation sequence creates a sense of progression from current capabilities " +
-                "toward future innovations.",
-                true // Enable animations
-            );
-        }
-
-        /// <summary>
-        /// Creates the conclusion slide summarizing key points
-        /// </summary>
-        private void CreateConclusionSlide()
-        {
-            Console.WriteLine("Creating conclusion slide...");
-
-            var conclusionSlideGenerator = new ConclusionSlide(presentation, conclusionLayout);
-
-            conclusionSlideGenerator.Generate(
-                "Conclusion",
-                "Knowledge graphs represent a transformative approach to information management, enabling organizations to move beyond data silos toward connected intelligence. By explicitly modeling relationships between entities, knowledge graphs provide context that traditional databases lack, supporting sophisticated reasoning and discovery.\n\n" +
-                "While implementing knowledge graphs presents challenges in construction, maintenance, and scalability, the benefits of contextual understanding, flexible integration, and inferential capabilities make them increasingly essential for organizations dealing with complex, interconnected information.",
-                "Thank you!",
-                "contact@example.com",
-                "This conclusion slide summarizes the key takeaways about knowledge graphs. " +
-                "It reinforces the main value proposition while acknowledging the implementation " +
-                "challenges. The call to action encourages the audience to consider how knowledge " +
-                "graphs might apply to their specific context."
-            );
-        }
-
-        #endregion
-
-        /// <summary>
-        /// Adds transitions between slides for a more polished presentation
-        /// </summary>
-        private void AddSlideTransitions()
-        {
-            Console.WriteLine("Adding slide transitions...");
-
-            // Apply a simple fade transition to all slides
-            for (int i = 1; i <= presentation.Slides.Count; i++)
-            {
-                Slide slide = presentation.Slides[i];
-
-                // Apply a fade transition
-                slide.SlideShowTransition.EntryEffect = PpEntryEffect.ppEffectFade; // Use the enum value instead of int
-
-                // Set transition speed
-                slide.SlideShowTransition.Speed = PpTransitionSpeed.ppTransitionSpeedMedium;
-
-                // Advance on click (not automatically)
-                slide.SlideShowTransition.AdvanceOnTime = MsoTriState.msoFalse;
-                slide.SlideShowTransition.AdvanceOnClick = MsoTriState.msoTrue;
-            }
-        }
-
-        /// <summary>
-        /// Adds a consistent footer to all slides
-        /// </summary>
-        private void AddFooterToAllSlides()
-        {
-            Console.WriteLine("Adding footers to slides...");
-
-            // Set footer properties for all slides
-            for (int i = 1; i <= presentation.Slides.Count; i++)
-            {
-                // Skip title slide (slide 1)
-                if (i == 1) continue;
-
-                Slide slide = presentation.Slides[i];
-
-                // Enable footer
-                slide.HeadersFooters.Footer.Visible = MsoTriState.msoTrue;
-                slide.HeadersFooters.Footer.Text = "Knowledge Graph Presentation | " + DateTime.Now.ToString("MMMM yyyy");
-
-                // Enable slide numbers
-                slide.HeadersFooters.SlideNumber.Visible = MsoTriState.msoTrue;
-
-                // Date is not needed as it's included in the footer text
-                slide.HeadersFooters.DateAndTime.Visible = MsoTriState.msoFalse;
-            }
+            // Set presentation properties
+            presentation.PageSetup.SlideSize = PpSlideSizeType.ppSlideSizeOnScreen16x9;
         }
 
         /// <summary>
@@ -686,28 +504,46 @@ namespace PowerPointAutomation
         /// </summary>
         private void CleanupComObjects()
         {
-            Console.WriteLine("Cleaning up COM objects...");
-
-            // Perform cleanup in reverse order (most recently created objects first)
+            Console.WriteLine("Starting final cleanup process...");
+            
             try
             {
-                // Close presentation without saving changes
+                // First release slide-specific objects that might be holding references
+                titleSlideGenerator = null;
+                introSlideGenerator = null;
+                featureSlideGenerator = null;
+                diagramSlideGenerator = null;
+                listSlideGenerator = null;
+                comparisonSlideGenerator = null;
+                summarySlideGenerator = null;
+                
+                // Force immediate garbage collection to clean up these references
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                
+                // Close presentation and release
                 if (presentation != null)
                 {
                     try
                     {
-                        // Try to close the presentation without saving
+                        // Try to close the presentation
                         presentation.Close();
+                        Console.WriteLine("Presentation closed successfully.");
                     }
                     catch (Exception ex)
                     {
                         Console.WriteLine($"Error closing presentation: {ex.Message}");
                     }
                     
-                    // Release COM object
+                    // Release presentation COM object and nullify reference
+                    Console.WriteLine("Releasing presentation COM object...");
                     object presObj = presentation;
                     presentation = null;
                     ComReleaser.ReleaseCOMObject(ref presObj);
+                    
+                    // Force immediate garbage collection
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
                 }
 
                 // Quit PowerPoint application
@@ -716,6 +552,7 @@ namespace PowerPointAutomation
                     try
                     {
                         // Try to quit the application
+                        Console.WriteLine("Quitting PowerPoint application...");
                         pptApp.Quit();
                     }
                     catch (Exception ex)
@@ -723,28 +560,84 @@ namespace PowerPointAutomation
                         Console.WriteLine($"Error quitting PowerPoint: {ex.Message}");
                     }
                     
-                    // Release COM object
+                    // Release PowerPoint COM object and nullify reference
+                    Console.WriteLine("Releasing PowerPoint application COM object...");
                     object appObj = pptApp;
                     pptApp = null;
                     ComReleaser.ReleaseCOMObject(ref appObj);
+                    
+                    // Force immediate garbage collection
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
                 }
             }
-            finally
+            catch (Exception ex)
             {
-                // Release all other tracked COM objects
-                ComReleaser.ReleaseAllTrackedObjects();
+                Console.WriteLine($"Error during primary COM object cleanup: {ex.Message}");
+            }
+            
+            try
+            {
+                // Release remaining tracked COM objects in smaller batches
+                Console.WriteLine("Releasing remaining tracked COM objects in small batches...");
                 
-                // Force garbage collection
+                // First batch - release 10 objects at a time
+                Console.WriteLine("First batch cleanup...");
+                ComReleaser.ReleaseAllTrackedObjects(10);
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                
+                // Second batch - release 5 objects at a time for more thorough cleanup
+                Console.WriteLine("Second batch cleanup (smaller batch size)...");
+                ComReleaser.ReleaseAllTrackedObjects(5);
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                
+                // Final sweep - release any remaining objects one by one
+                Console.WriteLine("Final sweep cleanup (one by one)...");
+                ComReleaser.ReleaseAllTrackedObjects(1);
+                
+                // Force final garbage collection with maximum generations
+                Console.WriteLine("Performing final garbage collection...");
                 ComReleaser.FinalCleanup();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error during batch COM object cleanup: {ex.Message}");
+            }
                 
-                // Check if PowerPoint process is still running
+            // Check if PowerPoint process is still running and kill if necessary
+            try
+            {
+                // First check
                 if (ComReleaser.IsProcessRunning("POWERPNT"))
                 {
                     Console.WriteLine("Warning: PowerPoint process is still running. Attempting to terminate...");
                     int killed = ComReleaser.KillProcess("POWERPNT");
                     Console.WriteLine($"Terminated {killed} PowerPoint process(es).");
+                    
+                    // Wait a moment and check again
+                    System.Threading.Thread.Sleep(500);
+                    
+                    // Second check after a brief pause
+                    if (ComReleaser.IsProcessRunning("POWERPNT"))
+                    {
+                        Console.WriteLine("PowerPoint process still detected. Final termination attempt...");
+                        killed = ComReleaser.KillProcess("POWERPNT");
+                        Console.WriteLine($"Terminated {killed} remaining PowerPoint process(es).");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("No remaining PowerPoint processes detected.");
                 }
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error checking/killing PowerPoint process: {ex.Message}");
+            }
+            
+            Console.WriteLine("Cleanup complete.");
         }
     }
 }

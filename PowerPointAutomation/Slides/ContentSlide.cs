@@ -45,18 +45,19 @@ namespace PowerPointAutomation.Slides
             // Add content slide
             Slide slide = presentation.Slides.AddSlide(presentation.Slides.Count + 1, layout);
 
-            // Set title with custom formatting
-            slide.Shapes.Title.TextFrame.TextRange.Text = title;
-            slide.Shapes.Title.TextFrame.TextRange.Font.Size = 36;
-            slide.Shapes.Title.TextFrame.TextRange.Font.Bold = MsoTriState.msoTrue;
-            slide.Shapes.Title.TextFrame.TextRange.Font.Color.RGB = ColorTranslator.ToOle(primaryColor);
+            // Use the safe method to get or create a title
+            PowerPointShape titleShape = OfficeCompatibility.GetOrCreateTitleShape(
+                slide, 
+                title, 
+                36, 
+                ColorTranslator.ToOle(primaryColor));
 
             // Add a subtle underline to the title
             PowerPointShape titleUnderline = slide.Shapes.AddLine(
-                slide.Shapes.Title.Left,
-                slide.Shapes.Title.Top + slide.Shapes.Title.Height + 5,
-                slide.Shapes.Title.Left + slide.Shapes.Title.Width * 0.4f,
-                slide.Shapes.Title.Top + slide.Shapes.Title.Height + 5
+                titleShape.Left,
+                titleShape.Top + titleShape.Height + 5,
+                titleShape.Left + titleShape.Width * 0.4f,
+                titleShape.Top + titleShape.Height + 5
             );
 
             titleUnderline.Line.ForeColor.RGB = ColorTranslator.ToOle(accentColor);
@@ -174,18 +175,19 @@ namespace PowerPointAutomation.Slides
             // Add slide with two content placeholders
             Slide slide = presentation.Slides.AddSlide(presentation.Slides.Count + 1, layout);
 
-            // Set title with custom formatting
-            slide.Shapes.Title.TextFrame.TextRange.Text = title;
-            slide.Shapes.Title.TextFrame.TextRange.Font.Size = 36;
-            slide.Shapes.Title.TextFrame.TextRange.Font.Bold = MsoTriState.msoTrue;
-            slide.Shapes.Title.TextFrame.TextRange.Font.Color.RGB = ColorTranslator.ToOle(primaryColor);
+            // Use the safe method to get or create a title
+            PowerPointShape titleShape = OfficeCompatibility.GetOrCreateTitleShape(
+                slide, 
+                title, 
+                36, 
+                ColorTranslator.ToOle(primaryColor));
 
             // Add a subtle underline to the title
             PowerPointShape titleUnderline = slide.Shapes.AddLine(
-                slide.Shapes.Title.Left,
-                slide.Shapes.Title.Top + slide.Shapes.Title.Height + 5,
-                slide.Shapes.Title.Left + slide.Shapes.Title.Width * 0.4f,
-                slide.Shapes.Title.Top + slide.Shapes.Title.Height + 5
+                titleShape.Left,
+                titleShape.Top + titleShape.Height + 5,
+                titleShape.Left + titleShape.Width * 0.4f,
+                titleShape.Top + titleShape.Height + 5
             );
 
             titleUnderline.Line.ForeColor.RGB = ColorTranslator.ToOle(accentColor);
